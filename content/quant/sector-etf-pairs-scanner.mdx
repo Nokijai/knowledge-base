@@ -1,0 +1,102 @@
+---
+title: "Sector ETF Pairs Trading Scanner"
+category: "quant-project"
+order: 4
+date: "2026-06-01"
+tags: ["pairs-trading", "cointegration", "sector-etf", "z-score", "hedge-ratio", "scanner"]
+description: "Automated scanner that tests all sector ETF pairs for cointegration, estimates hedge ratios, and builds z-score signals for mean-reversion trading."
+---
+
+## Objective
+
+Scan a basket of U.S. sector ETFs to identify cointegrated pairs, then build a spread-monitoring workflow (hedge ratio + z-score) for mean-reversion trading.
+
+---
+
+## Universe & Data
+
+**9 sector ETFs:** `XLK` · `XLF` · `XLE` · `XLV` · `XLY` · `XLP` · `XLI` · `XLU` · `XLB`
+
+**Source:** Yahoo Finance Adj Close, 2020-01-01 → 2026-05-01
+
+---
+
+## Method
+
+```python
+import itertools
+from statsmodels.tsa.stattools import coint
+import statsmodels.api as sm
+
+# Test all pairs
+for i, j in itertools.combinations(range(n), 2):
+    score, pvalue, _ = coint(data[keys[i]], data[keys[j]])
+    if pvalue < 0.05:
+        pairs.append((keys[i], keys[j], pvalue))
+
+# Best pair: OLS hedge ratio → spread → z-score
+X = sm.add_constant(data[asset_1])
+model = sm.OLS(data[asset_2], X).fit()
+spread = data[asset_2] - model.params[asset_1] * data[asset_1]
+z_score = (spread - spread.rolling(30).mean()) / spread.rolling(30).std()
+```
+
+**Steps:**
+1. Run Engle–Granger `coint()` on all ${9 \choose 2} = 36$ pair combinations
+2. Keep pairs with p-value < 0.05
+3. Select best pair (lowest p-value)
+4. Estimate hedge ratio $\hat{\beta}$ via OLS
+5. Compute spread and 30-day rolling z-score
+
+---
+
+## Results
+
+| Item | Result | Interpretation |
+|------|--------|----------------|
+| **Best pair** | `XLI` vs `XLK` | Strongest cointegration in this ETF set |
+| **Coint p-value** | 0.0132 | Passes 5% threshold — long-run relationship exists |
+| **Hedge ratio** | β ≈ 1.00 | Relative moves are close to one-for-one |
+| **Z-score bands** | ±2σ on 30-day window | Practical overbought / oversold trigger framework |
+
+---
+
+## Step 3 — The Spread
+
+The spread between XLK and β×XLI oscillates around 0 — this is what **mean reversion** looks like:
+
+<SpreadChart />
+
+---
+
+## Step 4 — Z-Score Signal
+
+The 30-day rolling z-score provides the actual trading signal. Crosses above +2 or below -2 flag entry points:
+
+<ZScoreChart />
+
+---
+
+## Z-Score Signal Design
+
+$$
+z_t = \frac{S_t - \bar{S}_{30}}{\sigma_{S,30}}
+$$
+
+| Level | Signal |
+|-------|--------|
+| $z_t > +2$ | Spread is rich — consider **short spread** |
+| $z_t < -2$ | Spread is cheap — consider **long spread** |
+| $z_t \to 0$ | Mean-reversion target — **exit** |
+
+---
+
+## Key Insights
+
+The scanner successfully identifies **XLI–XLK** as the strongest cointegration candidate. The end-to-end workflow covers: data download → pair scan → hedge ratio → spread → z-score signal.
+
+This is a **statistical starting point**, not a full strategy. Production requires:
+- Entry/exit rules with **transaction costs**
+- **Stop-loss** and position sizing logic
+- **Out-of-sample** backtesting
+- Regime detection (rolling cointegration tests)

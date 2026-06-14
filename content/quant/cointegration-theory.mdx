@@ -1,0 +1,104 @@
+---
+title: "Cointegration Theory"
+category: "quant-theory"
+order: 2
+date: "2026-05-25"
+tags: ["cointegration", "engle-granger", "pairs-trading", "spurious-regression", "hedge-ratio"]
+description: "Cointegration for pairs trading — Engle–Granger method, spurious regression, spread construction, and the distinction between correlation and cointegration."
+---
+
+## Cointegration
+
+Most asset prices are I(1) — they drift with trends. Regressing one price on another without care produces **spurious regression**. **Cointegration** means two I(1) series share a linear combination that is **I(0)** (stationary).
+
+$$
+\text{Spread}_t = X_t - \beta Y_t = \varepsilon_t \sim I(0)
+$$
+
+The hedge ratio $\beta$ defines units of $X$ per unit of $Y$ in a dollar-neutral spread.
+
+> Two drunk walkers on a **leash** — each path wanders, but their separation $\varepsilon_t$ stays bounded. The leash is cointegration; $\beta$ is how tight it is.
+
+---
+
+## Spurious Regression
+
+Two independent random walks can look related in levels because both trend upward.
+
+**Symptoms of spurious regression:**
+- High $R^2$
+- Low Durbin–Watson (residuals highly autocorrelated)
+- Residuals $u_t$ still **I(1)**
+
+Under cointegration, residuals $\varepsilon_t$ are **I(0)** — they mean-revert around equilibrium.
+
+> Two strangers climbing separate hills both go up (correlated height), but altitude difference keeps widening. Cointegrated climbers are on **the same rope**.
+
+---
+
+## Engle–Granger Two-Step Method
+
+**Step 1 — Estimate hedge ratio (OLS on levels):**
+
+$$
+\hat{Y}_t = \hat{\alpha} + \hat{\beta} X_t, \quad \hat{\varepsilon}_t = Y_t - \hat{Y}_t
+$$
+
+**Step 2 — ADF test on residuals $\hat{\varepsilon}_t$:**
+
+- **H₀:** No cointegration (residuals have a unit root)
+- **H₁:** Cointegration (residuals stationary)
+- **Rule:** p-value < 0.05 → reject H₀
+
+```python
+from statsmodels.tsa.stattools import coint
+
+score, pvalue, crit = coint(qqq_adj, voo_adj)
+```
+
+> Step 1 finds the best leash length. Step 2 asks whether the slack keeps growing or snaps back. Mean-reverting slack → cointegration.
+
+---
+
+## Correlation vs Cointegration
+
+| | **Correlation** | **Cointegration** |
+|---|-----------------|-------------------|
+| **Measures** | Co-movement of changes / short-run direction | Stability of a **level spread** / long-run gap |
+| **Use** | Risk, diversification, factor exposure | Pairs trading, stat arb on spread |
+| **Strong corr ⇒ coint?** | **No** | High corr can exist without a stationary spread |
+
+$$
+\rho_{XY} = \frac{\mathrm{Cov}(X_t, Y_t)}{\sigma_X \sigma_Y} \quad \text{vs.} \quad X_t - \beta Y_t \sim I(0)
+$$
+
+> **Correlation** = two runners speed up together. **Cointegration** = they stay within meters because of a rope.
+
+---
+
+## Spread, Ratio, and Hedge Ratio
+
+| Signal | Formula | Use case |
+|--------|---------|----------|
+| **Spread** | $S_t = X_t - \beta Y_t$ | Dollar-neutral after sizing |
+| **Ratio** | $R_t = X_t / Y_t$ | Relative value; common for ETFs |
+
+**Spread z-score** (once $S_t$ is stationary):
+
+$$
+z_t = \frac{S_t - \bar{S}}{\sigma_S}
+$$
+
+Trading rules (illustrative): enter when $|z_t| > z_{\text{entry}}$, exit when $z_t \to 0$.
+
+> If the ratio only goes up (QQQ outperforming VOO since 2020), there is no stable "fair" ratio — your strategy is trending relative value, not classical cointegration pairs.
+
+---
+
+## Practical Checklist
+
+1. Confirm both legs are **I(1)** (ADF on prices; fail to reject unit root)
+2. Run **`coint(X, Y)`** on aligned Adj Close
+3. If p < 0.05 → estimate $\hat{\beta}$, build spread, ADF-test spread, z-score / backtest
+4. If p ≥ 0.05 → do **not** assume classical cointegration; revisit pair choice
+5. Always separate **correlation**, **stationarity of signal**, and **cointegration**

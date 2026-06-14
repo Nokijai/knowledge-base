@@ -1,0 +1,72 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/knowledge-base:latest
+            ghcr.io/${{ github.repository_owner }}/knowledge-base:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to DigitalOcean
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USERNAME }}
+          password: ${{ secrets.DO_PASSWORD }}
+          script_stop: true
+          command_timeout: 5m
+          script: |
+            set -e
+
+            # Login to GHCR
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+
+            # Pull new image
+            docker pull ghcr.io/${{ github.repository_owner }}/knowledge-base:latest
+
+            # Stop old container
+            docker stop knowledge-base 2>/dev/null || true
+            docker rm knowledge-base 2>/dev/null || true
+
+            # Start new container
+            docker run -d \
+              --name knowledge-base \
+              --restart unless-stopped \
+              -p 3001:3000 \
+              ghcr.io/${{ github.repository_owner }}/knowledge-base:latest
+
+            # Cleanup
+            docker image prune -f
+
+            # Verify
+            sleep 3
+            curl -sf http://localhost:3001 > /dev/null && echo "✅ Knowledge base is live"

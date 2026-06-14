@@ -1,0 +1,145 @@
+---
+title: "Time Series Fundamentals"
+category: "quant-theory"
+order: 1
+date: "2026-05-25"
+tags: ["time-series", "stationarity", "adf-test", "acf-pacf", "differencing"]
+description: "Core time-series concepts for quantitative finance — stationarity, integration order, ADF testing, differencing, and autocorrelation diagnostics."
+---
+
+## Time Series
+
+A **time series** is a sequence of observations ordered in time: $x_1, x_2, \ldots, x_T$. In finance we work with **prices** (levels) or **returns** (changes).
+
+$$
+X_t = \mu_t + \varepsilon_t
+$$
+
+For **log prices**:
+
+$$
+p_t = \ln(P_t), \quad r_t = p_t - p_{t-1} = \ln\!\left(\frac{P_t}{P_{t-1}}\right)
+$$
+
+> Think of a time series as a **movie of one variable**, not a bag of random numbers. Order matters — today's price depends on yesterday's.
+
+---
+
+## Stationarity
+
+A series is **stationary** when its mean, variance, and autocovariance are stable over time. Non-stationary series drift or trend; naive regression on two trending prices produces **spurious correlation**.
+
+**Weak stationarity** requires for all lags $k$:
+
+$$
+\mathbb{E}[X_t] = \mu, \quad \mathrm{Var}(X_t) = \sigma^2, \quad \mathrm{Cov}(X_t, X_{t-k}) = \gamma_k
+$$
+
+A **random walk** violates this — its variance grows with $t$:
+
+$$
+X_t = X_{t-1} + \varepsilon_t, \quad \varepsilon_t \sim \text{i.i.d.}
+$$
+
+> Stationary = fluctuates around a fixed home (thermostat at 72 °F). Non-stationary = drunk walk with no fixed home and growing variance.
+
+---
+
+## Integration Order — I(0) and I(1)
+
+| Order | Meaning | Finance example |
+|-------|---------|-----------------|
+| **I(0)** | Stationary (or stationary after simple transform) | Returns |
+| **I(1)** | Non-stationary in levels; first difference ≈ I(0) | Asset prices |
+
+$$
+\Delta X_t = X_t - X_{t-1} \sim I(0) \quad \text{when } X_t \sim I(1)
+$$
+
+Two I(1) series may share a long-run link — that is **cointegration**.
+
+> **I(1)** = sticky memory (today = yesterday + shock). **I(0)** = short memory (shocks die out). Pairs trading assumes the spread is I(0).
+
+---
+
+## Augmented Dickey–Fuller (ADF) Test
+
+The standard first step before ARMA modeling or claiming mean reversion.
+
+- **H₀:** Unit root (non-stationary)
+- **H₁:** Stationary
+- **Rule:** p-value < 0.05 → reject H₀ → treat as stationary
+
+$$
+\Delta X_t = \alpha + \beta t + \gamma X_{t-1} + \sum_{i=1}^{p} \delta_i \Delta X_{t-i} + u_t
+$$
+
+$$
+H_0: \gamma = 0 \quad \text{vs.} \quad H_1: \gamma < 0
+$$
+
+```python
+from statsmodels.tsa.stattools import adfuller
+stat, pvalue, lags, nobs, crit, icbest = adfuller(series.dropna())
+```
+
+> ADF asks: *"Does the change pull the series back toward a level, or is it pure noise on a drifting walk?"*
+
+---
+
+## Differencing and Log-Diff
+
+**Differencing** removes trends and converts I(1) → I(0). **Log** stabilizes scale.
+
+$$
+\Delta X_t = X_t - X_{t-1}
+$$
+
+**Log-diff on a ratio** $R_t = Q_t / V_t$:
+
+$$
+\Delta g_t = \ln R_t - \ln R_{t-1} = \ln\!\left(\frac{R_t}{R_{t-1}}\right) \approx \frac{R_t - R_{t-1}}{R_{t-1}}
+$$
+
+> **Levels** = where the ratio is. **Log-diff** = how fast it changed today — speed vs position.
+
+---
+
+## ACF and PACF
+
+- **ACF** — correlation between $X_t$ and $X_{t-k}$ (includes indirect paths).
+- **PACF** — direct correlation at lag $k$ after removing shorter-lag effects.
+
+$$
+\rho_k = \frac{\mathrm{Cov}(X_t, X_{t-k})}{\mathrm{Var}(X_t)}
+$$
+
+```python
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+plot_acf(series.dropna(), lags=30)
+plot_pacf(series.dropna(), lags=30)
+```
+
+> Slow ACF decay → long memory / non-stationary. Sharp PACF drop after lag 1 → AR(1) candidate on the stationary transform.
+
+---
+
+## Correlation vs Stationarity vs Cointegration
+
+| Idea | What it checks | Pairs-trading relevance |
+|------|----------------|-------------------------|
+| **Correlation** | Short-run co-movement | High corr does **not** guarantee mean reversion |
+| **Stationarity** | Single series has a stable mean | Spread/ratio must be I(0) for z-score rules |
+| **Cointegration** | Long-run equilibrium between two I(1) series | The actual "leash" test for pairs |
+
+> **Correlation** = two runners often move together. **Cointegration** = tied by a leash so their gap is stable even though each path wanders.
+
+---
+
+## Practical Checklist
+
+1. Plot **levels** and **ratio**; compute **correlation**
+2. Run **ADF** on the trading signal series
+3. If non-stationary → try **log-diff** or test the **spread**
+4. Inspect **ACF/PACF** on the series you will actually model
+5. Only then: z-score, ARMA, or backtest — document H₀/H₁ and p-values

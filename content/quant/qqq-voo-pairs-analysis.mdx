@@ -1,0 +1,77 @@
+---
+title: "QQQ vs VOO Pairs Analysis"
+category: "quant-project"
+order: 3
+date: "2026-05-25"
+tags: ["pairs-trading", "qqq", "voo", "cointegration", "adf-test", "etf"]
+description: "Research project testing whether QQQ (Nasdaq-100) and VOO (S&P 500) are cointegrated — evaluating pairs trading feasibility with ADF and Engle–Granger tests."
+---
+
+## Objective
+
+Test whether **QQQ** (Nasdaq-100) and **VOO** (S&P 500) share a long-run cointegration relationship, and assess feasibility of a mean-reversion pairs strategy.
+
+**Data:** Yahoo Finance, 2020-01-01 → 2026-05-01
+
+---
+
+## Pipeline
+
+```python
+import yfinance as yf
+from statsmodels.tsa.stattools import adfuller, coint
+
+data = yf.download(["VOO", "QQQ"], start="2020-01-02", end="2026-05-01")
+ratio = qqq_adj / voo_adj
+log_diff = np.log(ratio).diff()
+```
+
+1. Download Adj Close for QQQ & VOO
+2. Compute QQQ/VOO **ratio** and **log-diff**
+3. Run **ADF** on ratio levels and log-diff
+4. Run **Engle–Granger** `coint()` on Adj Close levels
+
+---
+
+## Step 1 — Normalized Prices
+
+Both ETFs trend upward, but QQQ consistently outperforms. The growing gap is visible:
+
+<NormalizedPriceChart />
+
+---
+
+## Step 2 — QQQ/VOO Ratio
+
+The ratio trends from ~1.0 to ~1.4 — it doesn't oscillate around a mean. This is the visual signature of **no cointegration**.
+
+<RatioChart />
+
+---
+
+## Results
+
+| Test | Result | Interpretation |
+|------|--------|----------------|
+| **Correlation** | > 0.95 | Strong co-movement |
+| **ADF — ratio** | p ≈ 0.10, non-stationary | Mean-reversion ARMA on ratio levels is **not valid** |
+| **ADF — log-diff** | p ≈ 0, stationary | Differenced ratio usable for short-horizon modeling |
+| **Engle–Granger** | p ≈ 0.21, not cointegrated | No stable long-run equilibrium |
+
+---
+
+## Key Insights
+
+**Strong sync, weak cointegration.** High correlation does not imply tradable spread mean reversion. QQQ has structurally outperformed VOO since 2020 — the ratio **trends** rather than oscillates around a fixed mean.
+
+**If trading the ratio:** model on log-diff or detrended stationary series with rolling windows, transaction costs, and position limits — not a static z-score alone.
+
+**Pairs verdict:** At 5% significance we fail to reject no cointegration. QQQ–VOO is **not a strict cointegration pair** in this sample. Any strategy should be framed as **relative-value / trending ratio**, not classic cointegration pairs.
+
+---
+
+## Next Steps
+
+- Scan **sector ETFs** (e.g. XLK vs XLF) for better cointegration candidates
+- Explore **factor momentum** models
+- Test rolling-window cointegration for regime detection

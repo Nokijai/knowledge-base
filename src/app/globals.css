@@ -1,0 +1,188 @@
+@import "tailwindcss";
+@import "katex/dist/katex.min.css";
+
+@theme inline {
+  --color-background: #0a0a0a;
+  --color-foreground: #e5e5e5;
+  --color-muted: #737373;
+  --color-border: #262626;
+  --color-surface: #141414;
+  --color-accent: #3b82f6;
+  --color-accent-dim: #1e3a5f;
+  --color-tag-bg: #1a1a2e;
+  --color-tag-text: #818cf8;
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}
+
+/* Prose styling for article content */
+.prose {
+  --prose-headings: #f5f5f5;
+  --prose-body: #d4d4d4;
+  --prose-links: #60a5fa;
+  --prose-bold: #f5f5f5;
+  --prose-code: #c084fc;
+  --prose-borders: #262626;
+  line-height: 1.7;
+  max-width: 72ch;
+}
+
+.prose h2 {
+  color: var(--prose-headings);
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-top: 2.5rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--prose-borders);
+}
+
+.prose h3 {
+  color: var(--prose-headings);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.prose p {
+  color: var(--prose-body);
+  margin-bottom: 1rem;
+}
+
+.prose strong {
+  color: var(--prose-bold);
+  font-weight: 600;
+}
+
+.prose a {
+  color: var(--prose-links);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.prose ul, .prose ol {
+  color: var(--prose-body);
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.prose li {
+  margin-bottom: 0.35rem;
+}
+
+.prose li::marker {
+  color: var(--color-muted);
+}
+
+.prose blockquote {
+  border-left: 3px solid var(--color-accent);
+  padding: 0.6rem 1rem;
+  margin: 1.2rem 0;
+  background: var(--color-surface);
+  border-radius: 0 6px 6px 0;
+  font-style: italic;
+  color: #a3a3a3;
+}
+
+.prose blockquote p {
+  margin-bottom: 0;
+}
+
+.prose hr {
+  border-color: var(--prose-borders);
+  margin: 2rem 0;
+}
+
+/* Tables */
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.2rem 0;
+  font-size: 0.9rem;
+}
+
+.prose th {
+  background: var(--color-surface);
+  color: var(--prose-headings);
+  font-weight: 600;
+  text-align: left;
+  padding: 0.6rem 0.8rem;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.prose td {
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--prose-body);
+}
+
+.prose tr:hover td {
+  background: var(--color-surface);
+}
+
+/* Code blocks */
+.prose pre {
+  background: #111111 !important;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+
+.prose :not(pre) > code {
+  background: var(--color-surface);
+  color: var(--prose-code);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+/* KaTeX overrides */
+.katex-display {
+  margin: 1.2rem 0 !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.katex {
+  font-size: 1.05em !important;
+  color: #e2e8f0;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
