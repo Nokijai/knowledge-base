@@ -39,39 +39,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DO_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -t ed25519 ${{ secrets.DO_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
       - name: Deploy to DigitalOcean
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.DO_HOST }}
-          username: ${{ secrets.DO_USERNAME }}
-          key: ${{ secrets.DO_SSH_KEY }}
-          fingerprint: SHA256:S4DUzZKpA5VdzuobeqGn8DmZ8cV5YVocgNSj/2KLG7g
-          command_timeout: 5m
-          debug: true
-          script: |
-            set -e
-            OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
+        run: |
+          OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            ${{ secrets.DO_USERNAME }}@${{ secrets.DO_HOST }} bash -s << 'ENDSSH'
+          set -e
+          OWNER="nokijai"
 
-            # Login to GHCR
-            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u $OWNER --password-stdin
+          echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u $OWNER --password-stdin
 
-            # Pull new image
-            docker pull ghcr.io/$OWNER/knowledge-base:latest
+          docker pull ghcr.io/$OWNER/knowledge-base:latest
 
-            # Stop old container
-            docker stop knowledge-base 2>/dev/null || true
-            docker rm knowledge-base 2>/dev/null || true
+          docker stop knowledge-base 2>/dev/null || true
+          docker rm knowledge-base 2>/dev/null || true
 
-            # Start new container
-            docker run -d \
-              --name knowledge-base \
-              --restart unless-stopped \
-              -p 3001:3000 \
-              ghcr.io/$OWNER/knowledge-base:latest
+          docker run -d \
+            --name knowledge-base \
+            --restart unless-stopped \
+            -p 3001:3000 \
+            ghcr.io/$OWNER/knowledge-base:latest
 
-            # Cleanup
-            docker image prune -f
+          docker image prune -f
 
-            # Verify
-            sleep 3
-            curl -sf http://localhost:3001 > /dev/null && echo "✅ Knowledge base is live"
+          sleep 3
+          curl -sf http://localhost:3001 > /dev/null && echo "✅ Knowledge base is live"
+          ENDSSH
