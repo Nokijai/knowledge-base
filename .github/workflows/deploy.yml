@@ -59,6 +59,9 @@ jobs:
           docker pull ghcr.io/${OWNER}/knowledge-base:latest
           docker stop knowledge-base 2>/dev/null || true
           docker rm knowledge-base 2>/dev/null || true
+          # Kill any stray process on port 3001
+          fuser -k 3001/tcp 2>/dev/null || true
+          sleep 1
           docker run -d \
             --name knowledge-base \
             --restart unless-stopped \
