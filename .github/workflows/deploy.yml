@@ -45,7 +45,9 @@ jobs:
           host: ${{ secrets.DO_HOST }}
           username: ${{ secrets.DO_USERNAME }}
           key: ${{ secrets.DO_SSH_KEY }}
+          fingerprint: SHA256:S4DUzZKpA5VdzuobeqGn8DmZ8cV5YVocgNSj/2KLG7g
           command_timeout: 5m
+          debug: true
           script: |
             set -e
             OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
