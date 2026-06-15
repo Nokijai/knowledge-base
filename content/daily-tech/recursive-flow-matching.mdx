@@ -1,0 +1,44 @@
+---
+title: "Recursive Flow Matching"
+category: "daily-tech"
+order: 3
+date: "2026-06-15"
+tags: ["generative-models", "scientific-ml", "diffusion", "flow-matching"]
+description: "A self-consistency trick that turns discretization step size into a training signal — enabling 1-2 step scientific simulation at 20× diffusion's speed."
+---
+
+## The trick that makes flow matching simulate physics in a single step
+
+Flow matching already improved on diffusion. Recursive Flow Matching improves on flow matching by training the model to be consistent across *all* step sizes at once — collapsing dozens of inference steps down to one or two.
+
+**What it is:** Standard flow matching trains a neural ODE to transport noise $x_1$ to data $x_0$ along a single straight-ish trajectory. RecFM instead constructs a *family* of scaled trajectories at multiple discretization resolutions, all sharing the same intermediate spatial states $x_t$. A self-consistency loss enforces that predicting the endpoint in one big step or several small steps must give the same answer. The step size stops being a source of discretization error and becomes an explicit training signal.
+
+$$
+\mathcal{L}_\text{RecFM} = \mathbb{E}_{t,s}\Big[\| v_\theta(x_t, t) - v_\theta(x_t, t;\, s) \|^2\Big]
+$$
+
+where $s$ indexes the trajectory scale. The model learns to be internally consistent across all $s$ simultaneously.
+
+**Why it matters:** Simulating complex physical dynamics (fluid turbulence, atmospheric systems, plasma) with diffusion models requires 50–1000 denoising steps. RecFM achieves **20× speedup** over leading diffusion-based emulators while *improving* predictive accuracy — reducing MSE by over 15% vs vanilla flow matching. Crucially, it's the first method to achieve high-fidelity generation in just 1–4 steps on physics benchmark tasks. This could make real-time digital twins and ensemble weather forecasting computationally viable.
+
+**Example or insight:** The key analogy is from numerical ODE theory. If a solver is truly accurate, halving the step size shouldn't change the answer — it should just cost more compute. RecFM bakes this invariant directly into training:
+
+```python
+# Pseudocode: RecFM cross-scale consistency objective
+for x0, x1 in data_noise_pairs:
+    t = sample_timestep()
+
+    # Coarse trajectory: one big step
+    v_coarse = model(x_t, t, scale=1.0)
+
+    # Fine trajectory: same endpoint, smaller steps
+    v_fine = model(x_t, t, scale=0.5)
+
+    # Self-consistency: predictions must agree across scales
+    loss = mse(v_coarse, v_fine.detach())
+    loss.backward()
+```
+
+During inference you only run 1–2 steps. The model has already "seen" what coarser steps look like and learned to compensate, so the single-step result is nearly as accurate as running a full iterative solver.
+
+**Source:** [Recursive Flow Matching — arXiv:2605.26535](https://arxiv.org/abs/2605.26535) (Huang et al., May 2026) · [Project page](https://jhhuang.site/RecFM/)
