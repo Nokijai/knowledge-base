@@ -50,25 +50,19 @@ jobs:
         run: |
           OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
-            ${{ secrets.DO_USERNAME }}@${{ secrets.DO_HOST }} bash -s << 'ENDSSH'
+            ${{ secrets.DO_USERNAME }}@${{ secrets.DO_HOST }} \
+            "GHCR_TOKEN='${{ secrets.GHCR_TOKEN }}' OWNER='$OWNER' bash -s" << 'ENDSSH'
           set -e
-          OWNER="nokijai"
-
-          echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u $OWNER --password-stdin
-
+          echo "$GHCR_TOKEN" | docker login ghcr.io -u "$OWNER" --password-stdin
           docker pull ghcr.io/$OWNER/knowledge-base:latest
-
           docker stop knowledge-base 2>/dev/null || true
           docker rm knowledge-base 2>/dev/null || true
-
           docker run -d \
             --name knowledge-base \
             --restart unless-stopped \
             -p 3001:3000 \
             ghcr.io/$OWNER/knowledge-base:latest
-
           docker image prune -f
-
           sleep 3
           curl -sf http://localhost:3001 > /dev/null && echo "✅ Knowledge base is live"
           ENDSSH
