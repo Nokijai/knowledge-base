@@ -66,6 +66,7 @@ export function getCategories(): { name: string; label: string; posts: PostMeta[
     'quant-theory': 'Theory',
     'quant-project': 'Projects',
     'swe': 'SWE',
+    'daily-tech': 'Daily Tech Concepts',
   };
   return Array.from(catMap.entries()).map(([name, posts]) => ({
     name,

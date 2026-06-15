@@ -1,0 +1,36 @@
+---
+title: "Sample: Vector Databases Explained"
+category: "daily-tech"
+order: 1
+date: "2026-06-15"
+tags: ["vector-db", "embeddings", "AI", "infrastructure"]
+description: "A quick explainer on vector databases — what they are, why they matter for AI, and how they work under the hood."
+---
+
+## What Is a Vector Database?
+
+A vector database is a specialized data store designed to index and query high-dimensional vectors — the numerical representations (embeddings) that machine learning models produce from unstructured data like text, images, and audio. Unlike traditional databases that match on exact values or keyword overlap, vector databases find results by **semantic similarity**, returning the closest neighbors to a query vector in embedding space.
+
+## Why They Matter for AI
+
+Large language models and retrieval-augmented generation (RAG) pipelines depend on fast, accurate similarity search. When a user asks a question, the system encodes the query into a vector, searches millions of stored embeddings, and retrieves the most relevant documents — all in milliseconds. Without a purpose-built vector database, this lookup becomes a brute-force scan that doesn't scale. Engines like Pinecone, Weaviate, Milvus, and pgvector solve this with approximate nearest neighbor (ANN) algorithms such as HNSW and IVF, trading a tiny amount of recall for orders-of-magnitude speed gains.
+
+## How It Works Under the Hood
+
+At ingestion time each document is passed through an embedding model, and the resulting vector is inserted into an index. At query time the same model encodes the search input, and the index returns the top-k nearest vectors by cosine similarity (or another distance metric). Here's a minimal example using Python and a hypothetical client:
+
+```python
+from vector_client import VectorDB
+
+db = VectorDB(collection="tech-concepts")
+
+# Upsert a document embedding
+db.upsert(id="vec-db-101", vector=embed("Vector databases store embeddings..."), metadata={"topic": "infrastructure"})
+
+# Query by semantic similarity
+results = db.query(vector=embed("How do vector databases work?"), top_k=5)
+for r in results:
+    print(r.id, r.score)
+```
+
+The index structure — typically a graph (HNSW) or a set of inverted lists (IVF) — is what makes sub-linear search possible, enabling real-time retrieval even across billions of vectors.
