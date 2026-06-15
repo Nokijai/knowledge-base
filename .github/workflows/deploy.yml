@@ -45,7 +45,6 @@ jobs:
           host: ${{ secrets.DO_HOST }}
           username: ${{ secrets.DO_USERNAME }}
           password: ${{ secrets.DO_PASSWORD }}
-          script_stop: true
           command_timeout: 5m
           script: |
             set -e
