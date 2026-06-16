@@ -42,10 +42,10 @@ const MODE_CONFIG: Record<
       "Algorithms, system design, TypeScript, React, Docker, CI/CD — grounded in the knowledge base.",
     placeholder: "Ask about system design, algorithms, DevOps…",
     suggestions: [
-      "Explain Big O notation",
-      "How does Docker networking work?",
-      "What is a monorepo?",
-      "System design: URL shortener",
+      "Explain time complexity and Big O notation",
+      "How does TCP work?",
+      "Design a URL shortener",
+      "Difference between mutex and semaphore",
     ],
   },
 };
@@ -204,21 +204,17 @@ export default function ChatWidget({ mode: initialMode = "finance" }: ChatWidget
             </div>
             <div className="flex items-center gap-1">
               {/* Mode toggle buttons */}
-              <div className="flex items-center gap-0.5 mr-1">
+              <div className="chat-mode-toggle mr-1" role="group" aria-label="Select assistant mode">
                 {(Object.keys(MODE_CONFIG) as ChatMode[]).map((m) => (
                   <button
                     key={m}
                     onClick={() => handleModeSwitch(m)}
-                    className={`chat-header-btn px-1.5 text-xs font-medium transition-colors${
-                      activeMode === m
-                        ? " bg-foreground/10 text-foreground"
-                        : " text-muted hover:text-foreground"
-                    }`}
+                    className={`chat-mode-btn${activeMode === m ? " chat-mode-btn--active" : ""}`}
                     title={`Switch to ${MODE_CONFIG[m].label} mode`}
                     aria-label={`Switch to ${MODE_CONFIG[m].label} mode`}
                     aria-pressed={activeMode === m}
                   >
-                    {MODE_CONFIG[m].emoji}
+                    {MODE_CONFIG[m].emoji} {MODE_CONFIG[m].label}
                   </button>
                 ))}
               </div>
