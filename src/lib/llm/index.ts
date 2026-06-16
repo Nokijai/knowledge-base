@@ -8,4 +8,5 @@ export type {
   ChatStreamChunk,
 } from "./types";
 export { FINANCE_SYSTEM_PROMPT } from "./system-prompt";
+export { SWE_SYSTEM_PROMPT } from "./system-prompt-swe";
 export { getProvider } from "./provider-factory";

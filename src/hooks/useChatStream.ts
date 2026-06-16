@@ -12,10 +12,13 @@ export interface ChatMessage {
 interface UseChatStreamOptions {
   /** Backend endpoint – defaults to /api/chat */
   endpoint?: string;
+  /** Chat mode – "finance" (default) | "swe" */
+  mode?: "finance" | "swe";
 }
 
 export function useChatStream(opts: UseChatStreamOptions = {}) {
   const endpoint = opts.endpoint ?? "/api/chat";
+  const mode = opts.mode ?? "finance";
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,6 +56,7 @@ export function useChatStream(opts: UseChatStreamOptions = {}) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            mode,
             messages: [...messages, userMsg].map((m) => ({
               role: m.role,
               content: m.content,
@@ -180,7 +184,7 @@ export function useChatStream(opts: UseChatStreamOptions = {}) {
         abortRef.current = null;
       }
     },
-    [endpoint, messages, isStreaming],
+    [endpoint, mode, messages, isStreaming],
   );
 
   const stop = useCallback(() => {

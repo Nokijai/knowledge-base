@@ -16,10 +16,22 @@ import { NextRequest } from "next/server";
 import {
   getProvider,
   FINANCE_SYSTEM_PROMPT,
+  SWE_SYSTEM_PROMPT,
   type ChatMessage,
   type ChatRequest,
   type ChatStreamChunk,
 } from "@/lib/llm";
+
+// ── Mode ────────────────────────────────────────────────────────
+
+type ChatMode = "finance" | "swe";
+
+const VALID_MODES = new Set<ChatMode>(["finance", "swe"]);
+
+const SYSTEM_PROMPTS: Record<ChatMode, string> = {
+  finance: FINANCE_SYSTEM_PROMPT,
+  swe: SWE_SYSTEM_PROMPT,
+};
 
 // ── Config ─────────────────────────────────────────────────────
 
@@ -106,12 +118,21 @@ class ValidationError extends Error {
   }
 }
 
-function validateBody(body: unknown): ChatRequest {
+function validateBody(body: unknown): ChatRequest & { mode: ChatMode } {
   if (!body || typeof body !== "object") {
     throw new ValidationError("Request body must be a JSON object.");
   }
 
-  const { messages } = body as Record<string, unknown>;
+  const { messages, mode: rawMode } = body as Record<string, unknown>;
+
+  // Validate mode (optional, defaults to "finance")
+  const mode: ChatMode =
+    rawMode === undefined ? "finance" : (rawMode as ChatMode);
+  if (!VALID_MODES.has(mode)) {
+    throw new ValidationError(
+      `Invalid mode "${String(rawMode)}". Allowed: ${[...VALID_MODES].join(", ")}`,
+    );
+  }
 
   if (!Array.isArray(messages) || messages.length === 0) {
     throw new ValidationError("`messages` must be a non-empty array.");
@@ -158,7 +179,7 @@ function validateBody(body: unknown): ChatRequest {
     );
   }
 
-  return { messages: validated };
+  return { messages: validated, mode };
 }
 
 // ── SSE helpers ────────────────────────────────────────────────
@@ -191,7 +212,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Parse & validate
-  let body: ChatRequest;
+  let body: ChatRequest & { mode: "finance" | "swe" };
   try {
     const raw = await req.json();
     body = validateBody(raw);
@@ -202,9 +223,10 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
-  // Prepend system prompt
+  // Prepend system prompt based on mode
+  const systemPrompt = SYSTEM_PROMPTS[body.mode];
   const messages: ChatMessage[] = [
-    { role: "system", content: FINANCE_SYSTEM_PROMPT },
+    { role: "system", content: systemPrompt },
     ...body.messages,
   ];
 
