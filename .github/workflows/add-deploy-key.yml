@@ -18,17 +18,6 @@ jobs:
         env:
           DASHBOARD_PUBKEY: ${{ secrets.DASHBOARD_DEPLOY_PUBKEY }}
         run: |
-          PUBKEY="$DASHBOARD_PUBKEY"
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
             ${{ secrets.DO_USERNAME }}@${{ secrets.DO_HOST }} \
-            PUBKEY="$PUBKEY" bash -s << 'ENDSSH'
-          set -ex
-          # Add key if not already present
-          if ! grep -qF "$PUBKEY" ~/.ssh/authorized_keys 2>/dev/null; then
-            echo "$PUBKEY" >> ~/.ssh/authorized_keys
-            echo "Key added"
-          else
-            echo "Key already present"
-          fi
-          cat ~/.ssh/authorized_keys | tail -3
-          ENDSSH
+            "grep -qxF '${DASHBOARD_PUBKEY}' ~/.ssh/authorized_keys || echo '${DASHBOARD_PUBKEY}' >> ~/.ssh/authorized_keys && echo 'done' && tail -2 ~/.ssh/authorized_keys"
