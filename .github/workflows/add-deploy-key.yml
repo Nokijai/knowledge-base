@@ -1,0 +1,34 @@
+name: Add Deploy Key
+
+on:
+  workflow_dispatch:
+
+jobs:
+  add-key:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DO_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -t ed25519 ${{ secrets.DO_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Add dashboard deploy public key to authorized_keys
+        env:
+          DASHBOARD_PUBKEY: ${{ secrets.DASHBOARD_DEPLOY_PUBKEY }}
+        run: |
+          PUBKEY="$DASHBOARD_PUBKEY"
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            ${{ secrets.DO_USERNAME }}@${{ secrets.DO_HOST }} \
+            PUBKEY="$PUBKEY" bash -s << 'ENDSSH'
+          set -ex
+          # Add key if not already present
+          if ! grep -qF "$PUBKEY" ~/.ssh/authorized_keys 2>/dev/null; then
+            echo "$PUBKEY" >> ~/.ssh/authorized_keys
+            echo "Key added"
+          else
+            echo "Key already present"
+          fi
+          cat ~/.ssh/authorized_keys | tail -3
+          ENDSSH
