@@ -61,7 +61,11 @@ jobs:
           docker rm knowledge-base 2>/dev/null || true
           # Kill any stray process on port 3001
           fuser -k 3001/tcp 2>/dev/null || true
-          sleep 1
+          # Wait until port 3001 is actually free (up to 15s)
+          for i in $(seq 1 15); do
+            ss -tlnp | grep -q ':3001 ' || break
+            sleep 1
+          done
           docker run -d \
             --name knowledge-base \
             --restart unless-stopped \
