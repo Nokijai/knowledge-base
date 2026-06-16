@@ -66,6 +66,10 @@ jobs:
             --name knowledge-base \
             --restart unless-stopped \
             -p 3001:3000 \
+            -e LLM_PROVIDER=openai \
+            -e LLM_MODEL=deepseek-v4-flash \
+            -e OPENAI_BASE_URL=https://api.silra.cn/v1 \
+            -e LLM_API_KEY=${{ secrets.LLM_API_KEY }} \
             ghcr.io/${OWNER}/knowledge-base:latest
           docker image prune -f
           sleep 3
