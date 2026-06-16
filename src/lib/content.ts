@@ -42,7 +42,7 @@ export const getAllPosts = cache((): PostMeta[] => {
     const slug = path.basename(filePath, '.mdx');
     return { ...data, slug } as PostMeta;
   });
-  return posts.sort((a, b) => a.order - b.order);
+  return posts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 });
 
 export const getPostBySlug = cache((slug: string): Post | null => {
@@ -71,6 +71,6 @@ export function getCategories(): { name: string; label: string; posts: PostMeta[
   return Array.from(catMap.entries()).map(([name, posts]) => ({
     name,
     label: labels[name] || name,
-    posts: posts.sort((a, b) => a.order - b.order),
+    posts: posts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
   }));
 }
