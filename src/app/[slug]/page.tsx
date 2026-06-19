@@ -6,12 +6,20 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import Sidebar from "@/components/Sidebar";
 import MobileHeader from "@/components/MobileHeader";
-import { getAllPosts, getPostBySlug, getCategories } from "@/lib/content";
+import {
+  getAllPosts,
+  getPostBySlug,
+  getPostsByCategory,
+  getCategories,
+  CATEGORY_LABELS,
+} from "@/lib/content";
 import {
   NormalizedPriceChart,
   RatioChart,
 } from "@/components/charts/QqqVooCharts";
 import { SpreadChart, ZScoreChart } from "@/components/charts/SectorEtfCharts";
+
+export const dynamic = "force-dynamic";
 
 const mdxComponents = {
   NormalizedPriceChart,
@@ -19,11 +27,6 @@ const mdxComponents = {
   SpreadChart,
   ZScoreChart,
 };
-
-export async function generateStaticParams() {
-  const posts = getAllPosts();
-  return posts.map((post) => ({ slug: post.slug }));
-}
 
 export async function generateMetadata({
   params,
@@ -34,7 +37,7 @@ export async function generateMetadata({
   const post = getPostBySlug(slug);
   if (!post) return { title: "Not Found" };
   return {
-    title: post.title,
+    title: `${post.title} — Noki KB`,
     description: post.description,
   };
 }
@@ -48,11 +51,14 @@ export default async function ArticlePage({
   const post = getPostBySlug(slug);
   if (!post) notFound();
 
-  const allPosts = getAllPosts();
-  const currentIndex = allPosts.findIndex((p) => p.slug === slug);
-  const prev = currentIndex > 0 ? allPosts[currentIndex - 1] : null;
+  // Scoped prev/next — only within the same category
+  const categoryPosts = getPostsByCategory(post.category);
+  const currentIndex = categoryPosts.findIndex((p) => p.slug === slug);
+  const prev = currentIndex > 0 ? categoryPosts[currentIndex - 1] : null;
   const next =
-    currentIndex < allPosts.length - 1 ? allPosts[currentIndex + 1] : null;
+    currentIndex < categoryPosts.length - 1
+      ? categoryPosts[currentIndex + 1]
+      : null;
 
   const categories = getCategories();
   const mobileCategories = categories.map((c) => ({
@@ -61,12 +67,7 @@ export default async function ArticlePage({
     posts: c.posts.map((p) => ({ slug: p.slug, title: p.title })),
   }));
 
-  const categoryLabels: Record<string, string> = {
-    "quant-theory": "Theory",
-    "quant-project": "Projects",
-    swe: "SWE",
-    "daily-tech": "Daily Tech",
-  };
+  const categoryLabel = CATEGORY_LABELS[post.category] || post.category;
 
   return (
     <>
@@ -74,15 +75,23 @@ export default async function ArticlePage({
       <MobileHeader categories={mobileCategories} />
       <main className="lg:ml-64 min-h-screen">
         <div className="max-w-3xl mx-auto px-6 py-16 max-lg:pt-20">
+
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-sm text-muted mb-8">
             <Link href="/" className="hover:text-foreground transition-colors">
               Home
             </Link>
             <span>/</span>
-            <span className="text-foreground/70">
-              {categoryLabels[post.category] || post.category}
-            </span>
+            {post.category === "daily-tech" ? (
+              <Link
+                href="/daily"
+                className="hover:text-foreground transition-colors"
+              >
+                {categoryLabel}
+              </Link>
+            ) : (
+              <span className="text-foreground/70">{categoryLabel}</span>
+            )}
           </nav>
 
           {/* Article header */}
@@ -92,6 +101,8 @@ export default async function ArticlePage({
             </h1>
             <div className="flex items-center gap-3 flex-wrap">
               <span className="text-sm text-muted">{post.date}</span>
+              <span className="text-xs text-muted">·</span>
+              <span className="text-xs text-muted">{post.readingTime} min read</span>
               <div className="flex gap-1.5 flex-wrap">
                 {post.tags.map((tag) => (
                   <span
@@ -119,32 +130,34 @@ export default async function ArticlePage({
             />
           </div>
 
-          {/* Prev / Next */}
-          <nav className="mt-16 pt-6 border-t border-border flex justify-between gap-4">
-            {prev ? (
-              <Link href={`/${prev.slug}`} className="group flex flex-col">
-                <span className="text-xs text-muted mb-1">← Previous</span>
-                <span className="text-sm text-foreground group-hover:text-accent transition-colors">
-                  {prev.title}
-                </span>
-              </Link>
-            ) : (
-              <div />
-            )}
-            {next ? (
-              <Link
-                href={`/${next.slug}`}
-                className="group flex flex-col text-right"
-              >
-                <span className="text-xs text-muted mb-1">Next →</span>
-                <span className="text-sm text-foreground group-hover:text-accent transition-colors">
-                  {next.title}
-                </span>
-              </Link>
-            ) : (
-              <div />
-            )}
-          </nav>
+          {/* Prev / Next — scoped to same category */}
+          {(prev || next) && (
+            <nav className="mt-16 pt-6 border-t border-border flex justify-between gap-4">
+              {prev ? (
+                <Link href={`/${prev.slug}`} className="group flex flex-col max-w-[45%]">
+                  <span className="text-xs text-muted mb-1">← Previous</span>
+                  <span className="text-sm text-foreground group-hover:text-accent transition-colors line-clamp-2">
+                    {prev.title}
+                  </span>
+                </Link>
+              ) : (
+                <div />
+              )}
+              {next ? (
+                <Link
+                  href={`/${next.slug}`}
+                  className="group flex flex-col text-right max-w-[45%]"
+                >
+                  <span className="text-xs text-muted mb-1">Next →</span>
+                  <span className="text-sm text-foreground group-hover:text-accent transition-colors line-clamp-2">
+                    {next.title}
+                  </span>
+                </Link>
+              ) : (
+                <div />
+              )}
+            </nav>
+          )}
         </div>
       </main>
     </>
