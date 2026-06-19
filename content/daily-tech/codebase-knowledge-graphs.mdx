@@ -1,0 +1,34 @@
+---
+title: "Codebase Knowledge Graphs for AI Agents"
+category: "daily-tech"
+order: 1
+date: "2026-06-19"
+tags: ["ai-agents", "developer-tools", "knowledge-graph", "mcp"]
+description: "Your AI coding assistant secretly burns 120× more tokens than it needs to — a graph-based memory layer fixes that."
+---
+
+Your AI coding assistant is secretly terrible at reading code — and there's now a smarter way to fix that.
+
+**What it is:**
+When you ask an AI coding agent "what calls this function?", it does something embarrassingly dumb: it greps one file, reads it, greps another, reads that, and cascades through your whole codebase — burning thousands of tokens on pure navigation. `codebase-memory-mcp` flips this on its head. It uses **tree-sitter** (a real parser, not regex) to parse your entire repo upfront and bake it into a persistent **knowledge graph** — nodes for functions, classes, HTTP routes, call chains, cross-service links — stored in SQLite. Your AI agent then *queries the graph* instead of stumbling through files.
+
+**Why it matters / How it's used:**
+The token savings are staggering: 5 common structural questions cost ~412,000 tokens via file-by-file exploration, versus ~3,400 tokens from the graph — a **~120× reduction**. At $3–15/million tokens, that's real money on non-trivial codebases. It plugs in as an MCP server, so Claude Code, Cursor, Codex CLI and friends can immediately use it. It indexes the Linux kernel (28M lines) in 3 minutes. The binary is a single static C file with zero dependencies.
+
+**Quick example or insight:**
+
+```bash
+# Install (one-liner, auto-detects your agents)
+curl -fsSL .../install.sh | bash -s -- --ui
+
+# Agent can now answer structurally:
+# "What calls ProcessOrder?"  → ~200 tokens
+# "Trace call chain depth 3"  → ~800 tokens
+# vs. ~45,000–120,000 tokens grepping files
+```
+
+The key insight: the AI is the *intelligence layer*, the graph is the *memory layer*. Separating them is the whole trick.
+
+**📎 Source:** [github.com/DeusData/codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp) · [arXiv:2603.27277](https://arxiv.org/abs/2603.27277)
+
+The deeper rabbit hole: if a knowledge graph makes AI agents 120× more efficient at *reading* code, what happens when agents start *writing* to the graph too — and future agents inherit the map their predecessors built?

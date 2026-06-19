@@ -1,5 +1,6 @@
 [
   "recursive-flow-matching",
   "sample-concept",
-  "speculative-decoding"
+  "speculative-decoding",
+  "codebase-knowledge-graphs"
 ]
