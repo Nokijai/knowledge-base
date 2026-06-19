@@ -54,11 +54,19 @@ export const getPostBySlug = cache((slug: string): Post | null => {
   return { ...data, slug, content } as Post;
 });
 
+export const getDailyTechPosts = cache((): PostMeta[] => {
+  const posts = getAllPosts();
+  return posts
+    .filter((p) => p.category === 'daily-tech')
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+});
+
 export function getCategories(): { name: string; label: string; posts: PostMeta[] }[] {
   const posts = getAllPosts();
   const catMap = new Map<string, PostMeta[]>();
   for (const p of posts) {
     const cat = p.category;
+    if (cat === 'daily-tech') continue;
     if (!catMap.has(cat)) catMap.set(cat, []);
     catMap.get(cat)!.push(p);
   }

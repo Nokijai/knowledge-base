@@ -1,14 +1,16 @@
-import Link from "next/link";
-import { getCategories } from "@/lib/content";
+import Link from 'next/link';
+import { getCategories, getDailyTechPosts } from '@/lib/content';
 
 const categoryIcons: Record<string, string> = {
-  "quant-theory": "📐",
-  "quant-project": "📊",
-  swe: "💻",
+  'quant-theory': '📐',
+  'quant-project': '📊',
+  swe: '💻',
 };
 
 export default function Sidebar() {
   const categories = getCategories();
+  const dailyPosts = getDailyTechPosts();
+  const recentDaily = dailyPosts.slice(0, 5);
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 border-r border-border bg-surface/50 backdrop-blur-sm flex flex-col z-30 max-lg:hidden">
@@ -22,10 +24,35 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 overflow-y-auto p-4 space-y-5">
+        {/* Daily Tech section */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs uppercase tracking-wider text-muted font-semibold flex items-center gap-1.5">
+              <span>🧠</span> Daily Tech
+            </h3>
+            <Link href="/daily" className="text-xs text-accent hover:text-accent/80 transition-colors">
+              all →
+            </Link>
+          </div>
+          <ul className="space-y-0.5">
+            {recentDaily.map((post) => (
+              <li key={post.slug}>
+                <Link
+                  href={`/${post.slug}`}
+                  className="block px-3 py-1.5 rounded-md text-sm text-muted hover:text-foreground hover:bg-border/40 transition-all truncate"
+                >
+                  {post.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Other categories */}
         {categories.map((cat) => (
           <div key={cat.name}>
             <h3 className="text-xs uppercase tracking-wider text-muted font-semibold mb-2 flex items-center gap-1.5">
-              <span>{categoryIcons[cat.name] || "📁"}</span>
+              <span>{categoryIcons[cat.name] || '📁'}</span>
               {cat.label}
             </h3>
             <ul className="space-y-0.5">

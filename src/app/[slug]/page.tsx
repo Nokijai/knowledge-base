@@ -65,6 +65,7 @@ export default async function ArticlePage({
     "quant-theory": "Theory",
     "quant-project": "Projects",
     swe: "SWE",
+    "daily-tech": "Daily Tech",
   };
 
   return (
