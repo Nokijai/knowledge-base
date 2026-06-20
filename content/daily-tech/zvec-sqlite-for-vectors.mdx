@@ -1,0 +1,52 @@
+---
+title: "Zvec: SQLite for Vectors — The In-Process Vector Database"
+category: "daily-tech"
+order: 1
+date: "2026-06-20"
+tags: ["vector-search", "databases", "embeddings", "systems", "ai-infrastructure"]
+description: "Zvec is an in-process vector database from Alibaba that embeds directly into your app — no server, no config, just pip install and search billions of vectors in milliseconds."
+---
+
+**What if vector search was as simple as opening a file — like SQLite, but for embeddings?** That's exactly what Zvec delivers, and it's trending hard on GitHub right now.
+
+**What it is:**
+Zvec is an open-source, in-process vector database released by Alibaba (battle-tested internally at scale) that runs entirely inside your application process — no daemon, no Docker container, no network hop. Its v0.5.0 (June 2026) added hybrid retrieval combining dense vectors, sparse vectors, full-text search, and scalar filters in a *single query*. The core engine is C++, with Python, Node.js, Go, Rust, and Flutter SDKs via bindings.
+
+**Why it matters / How it's used:**
+The dominant pattern today — spinning up Qdrant, Weaviate, or Pinecone as a separate service — adds operational complexity even for prototypes. Zvec follows the SQLite philosophy: the database *is* your app. This is huge for notebooks, edge devices, CLI tools, and microservices where you need real similarity search without the infrastructure tax. The new DiskANN index also means you can search datasets that don't fit in RAM by keeping the index on disk.
+
+**Quick example or insight:**
+
+```python
+import zvec
+import numpy as np
+
+# Create a collection — no server needed
+schema = zvec.CollectionSchema(
+    name="docs",
+    vectors=zvec.VectorSchema("embedding", zvec.DataType.VECTOR_FP32, 1536),
+)
+collection = zvec.create_and_open(path="./my_vectors", schema=schema)
+
+# Insert documents with embeddings
+collection.insert([
+    zvec.Doc(id="doc_1", vectors={"embedding": np.random.rand(1536).tolist()}),
+    zvec.Doc(id="doc_2", vectors={"embedding": np.random.rand(1536).tolist()}),
+])
+
+# Hybrid query: vector similarity + full-text filter, in one shot
+results = collection.query(
+    zvec.MultiQuery(
+        vector_query=zvec.VectorQuery("embedding", vector=np.random.rand(1536).tolist()),
+        text_query=zvec.TextQuery("content", text="machine learning"),
+    ),
+    topk=5
+)
+print(results)  # [{'id': 'doc_1', 'score': 0.92, ...}, ...]
+```
+
+The "aha" moment: you don't need to think about infrastructure at all. `pip install zvec`, point it at a local path, and you have a production-grade similarity search engine with WAL-based durability and multi-process read access — in about 10 lines.
+
+**📎 Source:** [github.com/alibaba/zvec](https://github.com/alibaba/zvec)
+
+If every RAG prototype today starts with "first, spin up a vector DB," Zvec is quietly making that step disappear — and it's worth watching whether the in-process pattern reshapes how we think about AI data infrastructure at the edge.

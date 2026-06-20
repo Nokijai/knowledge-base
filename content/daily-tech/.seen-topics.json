@@ -2,5 +2,6 @@
   "recursive-flow-matching",
   "sample-concept",
   "speculative-decoding",
-  "codebase-knowledge-graphs"
+  "codebase-knowledge-graphs",
+  "zvec-sqlite-for-vectors"
 ]
