@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 import MobileHeader from '@/components/MobileHeader';
-import { getCategories, getDailyTechPosts } from '@/lib/content';
+import { getCategories, getDailyTechPosts, getDailyFinancePosts } from '@/lib/content';
 
 const categoryIcons: Record<string, string> = {
   'quant-theory': '📐',
@@ -13,9 +13,12 @@ const categoryIcons: Record<string, string> = {
 
 export default function Home() {
   const categories = getCategories();
-  const dailyPosts = getDailyTechPosts();
-  const latestDaily = dailyPosts[0] ?? null;
-  const recentDaily = dailyPosts.slice(1, 4);
+  const dailyTechPosts = getDailyTechPosts();
+  const dailyFinancePosts = getDailyFinancePosts();
+  const latestTech = dailyTechPosts[0] ?? null;
+  const recentTech = dailyTechPosts.slice(1, 4);
+  const latestFinance = dailyFinancePosts[0] ?? null;
+  const recentFinance = dailyFinancePosts.slice(1, 4);
 
   const mobileCategories = categories.map((c) => ({
     category: c.name,
@@ -38,34 +41,29 @@ export default function Home() {
           </div>
 
           {/* Daily Tech — featured hero */}
-          {latestDaily && (
+          {latestTech && (
             <section className="mb-10">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-xs uppercase tracking-wider text-muted font-semibold flex items-center gap-1.5">
-                  <span>🧠</span> Daily Concept
+                  <span>🧠</span> Daily Tech
                 </h2>
-                <Link
-                  href="/daily"
-                  className="text-xs text-accent hover:text-accent/80 transition-colors"
-                >
+                <Link href="/daily" className="text-xs text-accent hover:text-accent/80 transition-colors">
                   View all →
                 </Link>
               </div>
-
-              {/* Hero card — latest */}
-              <Link href={`/${latestDaily.slug}`} className="block group mb-3">
+              <Link href={`/${latestTech.slug}`} className="block group mb-3">
                 <article className="p-5 rounded-xl border border-accent/20 bg-surface/50 hover:bg-surface hover:border-accent/50 transition-all">
                   <div className="flex items-start justify-between gap-4 mb-2">
                     <h3 className="text-lg font-bold text-foreground group-hover:text-accent transition-colors">
-                      {latestDaily.title}
+                      {latestTech.title}
                     </h3>
                     <span className="text-xs text-muted whitespace-nowrap mt-1 shrink-0">
-                      {new Date(latestDaily.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {new Date(latestTech.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </span>
                   </div>
-                  <p className="text-sm text-muted mb-3 leading-relaxed">{latestDaily.description}</p>
+                  <p className="text-sm text-muted mb-3 leading-relaxed">{latestTech.description}</p>
                   <div className="flex gap-1.5 flex-wrap">
-                    {latestDaily.tags.slice(0, 4).map((tag) => (
+                    {latestTech.tags.slice(0, 4).map((tag) => (
                       <span key={tag} className="px-2 py-0.5 text-xs rounded-full bg-tag-bg text-tag-text">
                         {tag}
                       </span>
@@ -73,15 +71,13 @@ export default function Home() {
                   </div>
                 </article>
               </Link>
-
-              {/* Recent strip — previous 3 */}
-              {recentDaily.length > 0 && (
+              {recentTech.length > 0 && (
                 <div className="space-y-1">
-                  {recentDaily.map((post) => (
+                  {recentTech.map((post) => (
                     <Link key={post.slug} href={`/${post.slug}`} className="block group">
                       <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface/60 transition-all">
                         <span className="text-xs text-muted whitespace-nowrap w-14 shrink-0">
-                          {new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          {new Date(post.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </span>
                         <span className="text-sm text-muted group-hover:text-foreground transition-colors truncate">
                           {post.title}
@@ -94,6 +90,55 @@ export default function Home() {
             </section>
           )}
 
+          {/* Daily Finance — featured hero */}
+          {latestFinance && (
+            <section className="mb-10">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xs uppercase tracking-wider text-muted font-semibold flex items-center gap-1.5">
+                  <span>💰</span> Daily Finance
+                </h2>
+                <Link href="/daily-finance" className="text-xs text-accent hover:text-accent/80 transition-colors">
+                  View all →
+                </Link>
+              </div>
+              <Link href={`/${latestFinance.slug}`} className="block group mb-3">
+                <article className="p-5 rounded-xl border border-accent/20 bg-surface/50 hover:bg-surface hover:border-accent/50 transition-all">
+                  <div className="flex items-start justify-between gap-4 mb-2">
+                    <h3 className="text-lg font-bold text-foreground group-hover:text-accent transition-colors">
+                      {latestFinance.title}
+                    </h3>
+                    <span className="text-xs text-muted whitespace-nowrap mt-1 shrink-0">
+                      {new Date(latestFinance.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted mb-3 leading-relaxed">{latestFinance.description}</p>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {latestFinance.tags.slice(0, 4).map((tag) => (
+                      <span key={tag} className="px-2 py-0.5 text-xs rounded-full bg-tag-bg text-tag-text">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </article>
+              </Link>
+              {recentFinance.length > 0 && (
+                <div className="space-y-1">
+                  {recentFinance.map((post) => (
+                    <Link key={post.slug} href={`/${post.slug}`} className="block group">
+                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface/60 transition-all">
+                        <span className="text-xs text-muted whitespace-nowrap w-14 shrink-0">
+                          {new Date(post.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </span>
+                        <span className="text-sm text-muted group-hover:text-foreground transition-colors truncate">
+                          {post.title}
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
           {/* Divider */}
           <div className="border-t border-border mb-10" />
 

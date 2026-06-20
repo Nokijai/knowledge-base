@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getCategories, getDailyTechPosts } from '@/lib/content';
+import { getCategories, getDailyTechPosts, getDailyFinancePosts } from '@/lib/content';
 
 const categoryIcons: Record<string, string> = {
   'quant-theory': '📐',
@@ -9,10 +9,47 @@ const categoryIcons: Record<string, string> = {
 
 export default function Sidebar() {
   const categories = getCategories();
-  const dailyPosts = getDailyTechPosts();
-  const recentDaily = dailyPosts.slice(0, 5);
+  const dailyTechPosts = getDailyTechPosts();
+  const dailyFinancePosts = getDailyFinancePosts();
+  const recentTech = dailyTechPosts.slice(0, 5);
+  const recentFinance = dailyFinancePosts.slice(0, 5);
 
   const today = new Date().toISOString().slice(0, 10);
+
+  const DailyList = ({
+    posts,
+    href,
+  }: {
+    posts: typeof recentTech;
+    href: string;
+  }) => (
+    <ul className="space-y-0.5">
+      {posts.map((post) => {
+        const isToday = post.date === today;
+        return (
+          <li key={post.slug}>
+            <Link
+              href={`/${post.slug}`}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-border/40 transition-all group"
+            >
+              {isToday && (
+                <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0 animate-pulse" />
+              )}
+              <span className="text-sm text-muted group-hover:text-foreground transition-colors truncate flex-1">
+                {post.title}
+              </span>
+              <span className="text-xs text-muted/60 shrink-0 whitespace-nowrap">
+                {new Date(post.date + 'T00:00:00').toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </span>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 border-r border-border bg-surface/50 backdrop-blur-sm flex flex-col z-30 max-lg:hidden">
@@ -26,7 +63,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 overflow-y-auto p-4 space-y-5">
-        {/* Daily Tech section */}
+        {/* Daily Tech */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-xs uppercase tracking-wider text-muted font-semibold flex items-center gap-1.5">
@@ -36,32 +73,23 @@ export default function Sidebar() {
               all →
             </Link>
           </div>
-          <ul className="space-y-0.5">
-            {recentDaily.map((post) => {
-              const isToday = post.date === today;
-              return (
-                <li key={post.slug}>
-                  <Link
-                    href={`/${post.slug}`}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-border/40 transition-all group"
-                  >
-                    {isToday && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0 animate-pulse" />
-                    )}
-                    <span className="text-sm text-muted group-hover:text-foreground transition-colors truncate flex-1">
-                      {post.title}
-                    </span>
-                    <span className="text-xs text-muted/60 shrink-0 whitespace-nowrap">
-                      {new Date(post.date + 'T00:00:00').toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          <DailyList posts={recentTech} href="/daily" />
+        </div>
+
+        {/* Daily Finance */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs uppercase tracking-wider text-muted font-semibold flex items-center gap-1.5">
+              <span>💰</span> Daily Finance
+            </h3>
+            <Link href="/daily-finance" className="text-xs text-accent hover:text-accent/80 transition-colors">
+              all →
+            </Link>
+          </div>
+          {recentFinance.length > 0
+            ? <DailyList posts={recentFinance} href="/daily-finance" />
+            : <p className="text-xs text-muted px-3">Coming Tuesday</p>
+          }
         </div>
 
         {/* Other categories */}

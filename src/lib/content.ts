@@ -78,6 +78,12 @@ export const getDailyTechPosts = cache((): PostMeta[] => {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 });
 
+export const getDailyFinancePosts = cache((): PostMeta[] => {
+  return getAllPosts()
+    .filter((p) => p.category === 'daily-finance')
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+});
+
 export const getPostsByCategory = cache((category: string): PostMeta[] => {
   return getAllPosts()
     .filter((p) => p.category === category)
@@ -90,6 +96,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
   'quant-project': 'Projects',
   'swe': 'SWE',
   'daily-tech': 'Daily Tech',
+  'daily-finance': 'Daily Finance',
 };
 
 export const CATEGORY_ICONS: Record<string, string> = {
@@ -97,6 +104,7 @@ export const CATEGORY_ICONS: Record<string, string> = {
   'quant-project': '📊',
   'swe': '💻',
   'daily-tech': '🧠',
+  'daily-finance': '💰',
 };
 
 const CATEGORY_ORDER = ['quant-project', 'quant-theory', 'swe'];
@@ -106,6 +114,7 @@ export function getCategories(): { name: string; label: string; posts: PostMeta[
   const catMap = new Map<string, PostMeta[]>();
   for (const p of posts) {
     if (p.category === 'daily-tech') continue;
+    if (p.category === 'daily-finance') continue;
     if (!catMap.has(p.category)) catMap.set(p.category, []);
     catMap.get(p.category)!.push(p);
   }
