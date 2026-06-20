@@ -1,0 +1,86 @@
+---
+title: "The Square-Root Law of Market Impact"
+category: "daily-finance"
+order: 1
+date: "2026-06-20"
+tags: ["market microstructure", "price impact", "execution", "trading", "metaorders"]
+description: "Why moving a large order moves prices as the square root of its size — and why this is a mechanical law, not an informational one."
+---
+
+**Every institutional trader pays a hidden tax proportional to the square root of what they trade — and a 2025 study of 8 years of Tokyo Stock Exchange data just proved this law is universal and purely mechanical.**
+
+## What it is
+
+The **Square-Root Law of Market Impact** states that the average price impact $I$ of executing a large order (called a *metaorder*) scales as the square root of the traded volume $Q$:
+
+$$I(Q) = Y \cdot \sigma \sqrt{\frac{Q}{V}}$$
+
+where $\sigma$ is daily volatility, $V$ is daily traded volume, and $Y$ is a dimensionless prefactor of order 1. This means doubling your order size increases your market impact by only ~41%, not 100% — the relationship is concave (sublinear), not linear.
+
+A **metaorder** is a large parent order sliced into many smaller child orders executed incrementally over time. The law applies to the *total* average price displacement caused by executing the whole metaorder.
+
+## Why it matters
+
+This law sits at the heart of every institutional execution desk and quant fund. It directly determines **transaction cost analysis (TCA)**, optimal execution algorithms (Almgren-Chriss, VWAP scheduling), and real-world P&L. If you ignore it and model impact as linear, you dramatically overestimate costs for small orders and underestimate them for large ones.
+
+The "double" square-root paper by Bouchaud et al. (2025) added a crucial layer: the law holds at the *child order* level too, with a complementary **inverse square-root decay in time** as liquidity replenishes:
+
+$$\text{child order impact}(t) \propto \sqrt{q} \cdot t^{-1/2}$$
+
+The metaorder-level square-root law *emerges* from the convolution of these two effects — hence "double" square-root.
+
+## Quick example
+
+Say you manage a $1B equity fund and want to buy $10M of a stock with daily volume $100M and daily vol 1.5%.
+
+$$I = 1.0 \times 1.5\% \times \sqrt{\frac{10M}{100M}} = 1.5\% \times 0.316 \approx 0.47\%$$
+
+That's ~47 bps of slippage just from market impact — roughly $47,000 on that single trade. Now compare buying $40M of the same stock:
+
+$$I = 1.5\% \times \sqrt{\frac{40M}{100M}} = 1.5\% \times 0.632 \approx 0.95\%$$
+
+You quadrupled the size but only doubled the impact. The concavity is your friend — but it's still a real cost.
+
+```python
+import numpy as np
+
+def market_impact(Q, V, sigma, Y=1.0):
+    """
+    Square-root market impact model.
+    Returns impact in fractional price units (e.g. 0.005 = 50 bps).
+    """
+    return Y * sigma * np.sqrt(Q / V)
+
+# Example
+sigma = 0.015      # 1.5% daily vol
+V = 100_000_000    # $100M daily volume
+
+for Q in [1e6, 5e6, 10e6, 40e6]:
+    impact_bps = market_impact(Q, V, sigma) * 10000
+    print(f"Order ${Q/1e6:.0f}M → impact {impact_bps:.1f} bps")
+
+# Order $1M → impact 15.0 bps
+# Order $5M → impact 33.5 bps
+# Order $10M → impact 47.4 bps
+# Order $40M → impact 94.9 bps
+```
+
+## The mechanical debate — and why it matters philosophically
+
+The classic view (Kyle 1985, informed trading models) says price impact exists because the market *infers information* from your order flow and adjusts accordingly. Big orders move prices because they signal private knowledge.
+
+Bouchaud et al. (2025) showed this is largely wrong. Using trader-ID-resolved TSE data, they constructed **synthetic metaorders** — sequences of real market orders with trader identities *randomly shuffled*. These fake, informationally meaningless metaorders produced **identical square-root impact** as real ones.
+
+Conclusion: price impact is primarily **mechanical** — it reflects liquidity supply and demand dynamics in the order book, not information revelation. Markets move because *someone is persistently buying*, not because the market has figured out *who* is buying.
+
+This has a practical implication: **stealth is less important than you think**. The market doesn't need to identify you to react to your pressure. What matters is participation rate, not anonymity.
+
+## 📎 Sources
+
+- Maitrier, Loeper, Kanazawa, Bouchaud — *The "double" square-root law: Evidence for the mechanical origin of market impact* (2025): https://arxiv.org/abs/2502.16246
+- Angstmann, Gebbie — *Revisiting Trade-sign Long-memory and Square-root Law price impact* (2026): https://arxiv.org/abs/2606.16269
+- Baruch MFE — *Three Models of Market Impact* (lecture notes): https://mfe.baruch.cuny.edu/wp-content/uploads/2017/05/Chicago2016OptimalExecution.pdf
+
+---
+
+*If the square-root law is mechanical and universal, it implies a deep constraint on how fast large capital can be deployed. What's the theoretical maximum AUM before every trade becomes self-defeating — and are today's trillion-dollar funds already hitting that wall?*
