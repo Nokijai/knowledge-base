@@ -4,5 +4,6 @@
   "speculative-decoding",
   "codebase-knowledge-graphs",
   "zvec-sqlite-for-vectors",
-  "thermodynamic-measure-of-intelligence"
+  "thermodynamic-measure-of-intelligence",
+  "parallel-dp-gpu-kernels"
 ]

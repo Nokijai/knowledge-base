@@ -1,0 +1,67 @@
+---
+title: "Parallel Dynamic Programming: Cracking an Inherently Sequential Algorithm on GPUs"
+category: "daily-tech"
+order: 1
+date: "2026-06-22"
+tags: ["dynamic-programming", "GPU", "optimization", "parallel-algorithms", "stochastic-programming"]
+description: "A 2026 paper rewrites Dynamic Programming as hardware-aware GPU kernels, achieving 10,000–100,000× speedups by exposing three hidden parallelism axes that classical DP ignores."
+---
+
+**Dynamic Programming (DP) has always been considered fundamentally sequential — each state depends on previous states, so you can't parallelise it. Or so everyone assumed.**
+
+## What it is
+
+Dynamic Programming is a classic algorithmic technique: break a problem into overlapping subproblems, solve each once, store the results. The Bellman equation — the core of DP — says each value depends on the values of *prior* states, which seems to force sequential execution. In stochastic optimisation (e.g., vehicle routing under uncertainty), you need to solve a DP not just once but for *every* scenario in your sample set — potentially millions of them. This has historically been so expensive that researchers simplified or abandoned the integer/combinatorial structure of the problem entirely.
+
+A 2026 paper — *"From Sequential to Parallel: Reformulating Dynamic Programming as GPU Kernels for Large-Scale Stochastic Combinatorial Optimization"* — challenges this assumption head-on.
+
+## Why it matters / How it's used
+
+The key insight is that while a *single* DP must run sequentially, solving *many* DPs simultaneously exposes enormous parallelism. The authors identify **three independent axes** that can be GPU-parallelised:
+
+1. **Across scenarios** — all one million sampled scenarios can be batched and solved simultaneously
+2. **Across DP layers** — within each Bellman update, states at the same "depth" are independent
+3. **Across route/action options** — all candidate decisions at a node can be evaluated in parallel
+
+By rewriting DP as hardware-aware CUDA kernels that exploit all three axes at once, Bellman updates that previously required sequential passes can be executed in a *single GPU pass* over 1,000,000+ problem instances. The speedup: **10² to 10⁵× (one to five orders of magnitude)** over prior CPU-based approaches, with *near-linear scaling* in scenario count.
+
+This is immediately practical for:
+- **Stochastic vehicle routing** (logistics under demand uncertainty)
+- **Inventory management** (restocking decisions under uncertain demand)
+- Any scenario-based Sample Average Approximation (SAA) with NP-hard recourse structure
+
+## Quick example or insight
+
+The classic DP Bellman update for a shortest-path style problem looks like:
+
+```python
+# Traditional: fully sequential — O(S × N × A)
+for scenario in scenarios:        # must loop S scenarios
+    for layer in dp_layers:       # must loop N layers in order
+        for action in actions:    # must loop A actions
+            V[scenario][layer] = min(cost[action] + V[scenario][layer-1])
+```
+
+The GPU-reformulated version collapses this to a single batched kernel call:
+
+```python
+# GPU: all three loops become parallel dimensions
+# Conceptually:
+V = bellman_gpu_kernel(
+    costs,           # shape: [S, N, A]  — all scenarios, layers, actions
+    V_prev,          # shape: [S, N]     — previous layer values
+)
+# Single kernel launch; GPU threads handle all S × N × A evaluations in parallel
+```
+
+The mathematical core is the Bellman operator $T$:
+
+$$V^*(s) = \min_{a \in \mathcal{A}} \left[ c(s, a) + \gamma \sum_{s'} P(s'|s,a) V^*(s') \right]$$
+
+The trick: when solving $M$ independent scenarios, each scenario's $V^*$ is *completely independent* — making the batch dimension trivially parallel on GPU hardware.
+
+The result? Problems that previously required restricting the second stage to linear models (because combinatorial DP was too slow) can now be solved with full integer recourse at scales *previously considered impossible*.
+
+**📎 Source:** [arXiv:2602.05179](https://arxiv.org/abs/2602.05179)
+
+If sequential Bellman updates were the wall limiting stochastic optimisation, this paper just turned that wall into a GPU — and the next question is: which other "inherently sequential" algorithms are secretly massively parallel across their problem instances?
