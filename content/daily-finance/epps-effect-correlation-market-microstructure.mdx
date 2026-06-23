@@ -1,0 +1,89 @@
+---
+title: "The Epps Effect: Why Stock Correlations Vanish at High Frequency"
+category: "daily-finance"
+order: 1
+date: "2026-06-23"
+tags: ["market-microstructure", "high-frequency-trading", "correlation", "order-books", "statistical-finance"]
+description: "The Epps Effect is the empirical puzzle that cross-correlations between stock returns collapse toward zero at short time scales — a hidden trap that can destroy HFT pairs-trading strategies and misstate portfolio risk."
+---
+
+**Two stocks that move together 60% of the time on a daily chart can appear almost uncorrelated at the one-second level — and if you do not know why, you will blow up a pairs trade.**
+
+## What it is
+
+The **Epps Effect**, first documented by economist T.W. Epps in 1979, is the empirical observation that the cross-correlation between the returns of two assets is a *decreasing function* of the measurement interval. At daily or weekly resolution, correlated stocks show typical Pearson correlations of 0.5–0.7. Zoom in to tick-by-tick data at millisecond resolution, and those same pairs often show a correlation below 0.05 — near zero.
+
+This is not a statistical artefact. It is a *structural* property of how prices are formed in limit order books. A June 2026 paper by Angstmann and Gebbie (arXiv:2606.14182) now provides the first unified analytic account using coupled reaction–diffusion equations.
+
+The effect arises from three distinct mechanisms:
+
+1. **Asynchronous event clocks (subordination):** Two assets do not trade at the same instants. Sampling prices at regular calendar-time intervals often compares a "stale" price on one asset against a fresh one on another, injecting uncorrelated noise into the covariance estimator.
+2. **Finite coupling response times:** Information that drives both assets spreads through the order books with a finite propagation delay. At time scales shorter than this delay, the two books appear decoupled.
+3. **Combination effects:** The two mechanisms compound non-linearly, producing an Epps curve that is steeper than either alone.
+
+In the reaction–diffusion model, realised correlation as a function of aggregation time $\tau$ takes the approximate closed form:
+
+$$
+\rho(\tau) \approx \rho_\infty \left(1 - e^{-\tau / \tau^*}\right)
+$$
+
+where $\rho_\infty$ is the "true" long-run correlation and $\tau^*$ is a characteristic time scale capturing both asynchrony and coupling latency.
+
+## Why it matters / How it is used
+
+**Pairs trading and stat-arb:** Strategies trading mean-reversion on co-integrated pairs estimate the hedge ratio from correlation. If the strategy executes at 1-minute bars but correlation was calibrated on daily data, the hedge ratio is systematically overstated — the position carries far more residual risk than expected.
+
+**Portfolio optimisation:** Mean-variance optimisers fed with high-frequency correlation matrices will *underestimate* true correlations and therefore *overestimate* diversification benefits. The result is under-hedged positions — exactly the wrong outcome when correlations spike in a risk-off move.
+
+**Options on baskets:** Basket options and correlation swaps require accurate cross-correlation inputs. Vol desks explicitly correct for the Epps effect by upward-adjusting HF correlation estimates before pricing.
+
+**HFT signal design:** Recognising that correlation "turns on" above a certain $\tau^*$ threshold identifies the window within which cross-asset signals carry information — and avoids trading on spurious decorrelation below that threshold.
+
+## Quick example / insight
+
+Consider SPY and QQQ — historically $\rho_\infty \approx 0.92$ at daily frequency.
+
+| Sampling interval | Observed correlation |
+|---|---|
+| 1 day | ~0.92 |
+| 1 hour | ~0.80 |
+| 5 minutes | ~0.55 |
+| 1 minute | ~0.35 |
+| 10 seconds | ~0.10 |
+
+Same two instruments, same underlying comovement — only the measurement window changes. A naive HFT pairs strategy calibrated on tick data would compute a hedge ratio of essentially zero and hold *no hedge at all*.
+
+**Python sketch — computing the Epps curve empirically:**
+
+```python
+import numpy as np
+
+def epps_curve(prices_a, prices_b, intervals_seconds, base_freq=1):
+    """
+    Compute empirical Pearson correlation at multiple aggregation intervals.
+    prices_a, prices_b: tick-level price series (same length)
+    base_freq: ticks per second
+    """
+    correlations = {}
+    for tau in intervals_seconds:
+        k = int(tau * base_freq)
+        n = len(prices_a) // k
+        ret_a = np.diff(np.log(prices_a[:n*k].reshape(n, k)[:, -1]))
+        ret_b = np.diff(np.log(prices_b[:n*k].reshape(n, k)[:, -1]))
+        correlations[tau] = np.corrcoef(ret_a, ret_b)[0, 1]
+    return correlations
+
+# Example output tracing the Epps curve:
+# {10: 0.08, 60: 0.35, 300: 0.55, 3600: 0.80, 86400: 0.92}
+```
+
+The inflection point of this curve is the characteristic coupling time $\tau^*$ — the *minimum safe bar size* for a pairs strategy on these two assets.
+
+## Source
+
+- Angstmann, C. and Gebbie, T. (2026). *Correlation emergence and the Epps effect in two coupled limit order books.* arXiv:2606.14182. https://arxiv.org/abs/2606.14182
+- Epps, T.W. (1979). *Comovements in Stock Prices in the Very Short Run.* Journal of the American Statistical Association, 74, 291–298.
+
+---
+
+*If the correlations you use to build your hedge disappear the moment you try to trade them — were they ever real?*
