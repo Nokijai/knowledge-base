@@ -1,0 +1,55 @@
+---
+title: "Reasoning as Attractor Dynamics"
+category: "daily-tech"
+order: 1
+date: "2026-06-24"
+tags: ["ai", "llm", "physics", "energy-based-models", "inference"]
+description: "LLM reasoning reframed as thermodynamic relaxation — hallucinations are sharp energy minima, correct answers are flat ones."
+---
+
+**What if your language model isn't generating text — it's settling into a memory?** A new paper from ICLR 2026 reframes LLM inference through the lens of statistical physics, and the results are both beautiful and practically useful.
+
+**What it is:** The paper "Reasoning as Attractor Dynamics" (Awadhiya, 2026) proposes that transformer-based LLMs should be understood as **Dense Associative Memories** — not autoregressive text machines. Every reasoning chain a model produces corresponds to a trajectory through an energy landscape. *Correct answers* fall into **flat, wide attractor basins** (stable memories), while *hallucinations* are **sharp, unstable local minima** — they look deep, but they're narrow and brittle. Inference is then modelled as a relaxation process toward equilibrium, not greedy next-token prediction.
+
+**Why it matters:** This framing does two things at once. First, it gives hallucinations a *geometric diagnosis* — they live in sharp, perturbation-sensitive regions of the energy landscape. Second, it provides a practical fix that requires *no fine-tuning*: at test time, sample $K$ reasoning paths, compute the energy of each (approximated as length-normalised negative log-likelihood), and reweight them with a Gibbs/Boltzmann measure. Low-energy trajectories (wide basins) win.
+
+$$P_{\text{retrieval}}(y^{(k)}) \propto \exp\!\left(-\beta \cdot H(y^{(k)})\right)$$
+
+where the paper uses an **inverse-square sharpening** scheme:
+
+$$w_k \propto \frac{1}{E(y^{(k)})^2 + \epsilon}$$
+
+This is essentially **simulated annealing at test time** — hot particles (hallucinatory paths with high entropy) evaporate; cold particles (resonant, low-entropy trajectories) dominate.
+
+**Quick example or insight:** On GSM8K (grade-school math), applied to Microsoft's tiny Phi-3.5-mini (3.8B parameters):
+
+```python
+# Conceptual sketch — full impl in the paper
+def gibbs_select(paths, model, beta=2.0, eps=1e-6):
+    """
+    paths: list of K reasoning chains (strings)
+    Returns: the answer with highest Gibbs-weighted vote
+    """
+    energies = [avg_nll(model, p) for p in paths]   # E(y) = mean token NLL
+    weights  = [1.0 / (e**2 + eps) for e in energies]
+    total    = sum(weights)
+    votes    = {}
+    for p, w in zip(paths, weights):
+        ans = extract_answer(p)
+        votes[ans] = votes.get(ans, 0) + w / total
+    return max(votes, key=votes.get)
+```
+
+| Strategy | Accuracy |
+|---|---|
+| Greedy decoding | 78.4% |
+| Standard sampling (K=12) | 84.7% |
+| **Gibbs-weighted (K=12)** | **90.1%** |
+
+That's +11.6% over greedy and +5.4% over naïve ensemble — all from a physics-inspired reweighting step, no gradient update required.
+
+**The deep connection:** The Gibbs retrieval operator turns out to approximate the update rule of **Modern Hopfield Networks**, a class of energy-based associative memories with exponential storage capacity. The LLM is the memory; inference is retrieval; the energy landscape is real.
+
+**📎 Source:** [arXiv:2606.24543](https://arxiv.org/abs/2606.24543) — *Reasoning as Attractor Dynamics: Latent Memory Retrieval via Gibbs-Weighted Energy Minimization*, Kanishk Awadhiya, ICLR Workshop 2026.
+
+If hallucinations are sharp minima, the next question writes itself: can we *detect* them in real time by monitoring the curvature of the energy surface as the model reasons?
