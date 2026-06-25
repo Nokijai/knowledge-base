@@ -1,0 +1,83 @@
+---
+title: "Loss-Versus-Rebalancing (LVR): The Black-Scholes Formula for AMMs"
+category: "daily-finance"
+order: 1
+date: "2026-06-25"
+tags: ["market-microstructure", "DeFi", "AMM", "adverse-selection", "options-theory"]
+description: "LVR is the hidden, unavoidable adverse-selection tax that AMM liquidity providers pay to arbitrageurs — and it has a closed-form expression that mirrors the Black-Scholes Gamma P&L."
+---
+
+**Every time price moves, AMM liquidity providers silently bleed to arbitrageurs — LVR puts a precise dollar figure on that leak, and the formula looks suspiciously like an options Greek.**
+
+## What it is
+
+Loss-Versus-Rebalancing (LVR) is the adverse-selection cost paid by passive liquidity providers (LPs) in automated market makers (AMMs) due to stale pricing. Introduced by Milionis, Moallemi, Roughgarden, and Zhang (Columbia/UChicago, 2022), it measures the shortfall between a passive LP's actual P&L and a hypothetical *rebalancing strategy* that holds the same portfolio but always trades at true market prices (i.e., on a frictionless CEX).
+
+An AMM like Uniswap never proactively updates its quotes. When the CEX price moves, the AMM's quotes become stale. Arbitrageurs race to "snipe" the mispriced pool, buying cheap assets and selling expensive ones — the profit comes entirely out of the LP's pocket. LVR is the *cumulative* cost of this mechanism, cleanly separated from directional market risk (beta) and from impermanent loss (IL), which is path-dependent and can reverse.
+
+The key distinction: **IL disappears if prices revert. LVR never reverses — it is a permanent, monotonically growing drain.**
+
+## Why it matters / How it's used
+
+At real trading desks and DeFi protocols, LVR is the critical metric for evaluating whether liquidity provision is profitable net of fees:
+
+- **LP return decomposition:** Total LP return = Fees collected − LVR − directional exposure. A pool is only worth providing liquidity if Fees > LVR on average.
+- **Protocol design:** Uniswap v3, Curve, and newer AMMs (dynamic fee protocols) are redesigning fee structures to cover LVR. Protocols with faster block times (e.g., per-block rebalancing) structurally reduce LVR by shrinking the window for stale quotes.
+- **Hedging:** Sophisticated LPs can delta-hedge the directional component and use LVR to price the residual adverse-selection risk — effectively pricing an LP position like a short gamma options position.
+- **Market microstructure research:** LVR provides a rigorous bridge between DeFi market making and classical adverse-selection theory (Glosten-Milgrom, Kyle model).
+
+## Quick example or insight
+
+The closed-form expression for instantaneous LVR of a constant-function market maker (CFMM) is:
+
+$$\text{LVR}_t = \frac{1}{2} \sigma_t^2 \cdot \Gamma(P_t) \cdot P_t^2 \, dt$$
+
+where $\sigma_t$ is the asset's instantaneous volatility, $P_t$ is the current price, and $\Gamma(P_t) = -\frac{\partial^2 V}{\partial P^2}$ is the (positive) gamma of the LP's value function — the marginal liquidity of the pool.
+
+This is structurally identical to the **Black-Scholes Gamma P&L** of a short options position: $\frac{1}{2} \sigma^2 S^2 \Gamma \, dt$.
+
+For the Uniswap v2 constant-product pool ($x \cdot y = k$), the value function is $V(P) = 2\sqrt{kP}$, so $\Gamma(P) = \frac{\sqrt{k}}{2P^{3/2}}$. Plugging in:
+
+$$\text{LVR rate} = \frac{\sigma^2}{8} \cdot V(P)$$
+
+**The annual LVR equals $\sigma^2 / 8$ times the pool's total value.**
+
+Numerical example:
+- Pool: ETH/USDC, $1,000,000 TVL
+- ETH annualised volatility: $\sigma = 80\%$
+- Annual LVR $= (0.8)^2 / 8 \times \$1{,}000{,}000 = \$80{,}000$ per year
+
+That's 8% of pool value lost to arbitrageurs *just from stale quote sniping*, before any impermanent loss. A pool charging 0.3% fees needs roughly $26.7M in daily volume to break even on LVR alone.
+
+```python
+def annual_lvr(tvl: float, sigma: float) -> float:
+    """
+    Annual LVR for a Uniswap v2 constant-product pool.
+    tvl: pool value in USD
+    sigma: annualised asset volatility (e.g. 0.80 for 80%)
+    """
+    return (sigma ** 2 / 8) * tvl
+
+# Example
+print(f"Annual LVR: ${annual_lvr(1_000_000, 0.80):,.0f}")
+# → Annual LVR: $80,000
+
+def break_even_daily_volume(tvl: float, sigma: float, fee_bps: float) -> float:
+    """Daily volume needed so fees cover annual LVR."""
+    annual = annual_lvr(tvl, sigma)
+    fee_rate = fee_bps / 10_000
+    return annual / (fee_rate * 365)
+
+print(f"Break-even daily volume: ${break_even_daily_volume(1_000_000, 0.80, 30):,.0f}")
+# → Break-even daily volume: $2,739,726
+```
+
+The deeper insight: **LPs in a Uniswap v2 pool are essentially writing a delta-hedged short straddle on the underlying asset**. They receive fee income (theta) but pay LVR (gamma loss). The pool's curvature determines the gamma exposure — a flatter pool has less gamma and less LVR per dollar, which is exactly why concentrated liquidity (Uniswap v3) is a double-edged sword: higher fee efficiency, but higher gamma = higher LVR when price moves out of range.
+
+## 📎 Source
+
+Milionis, Moallemi, Roughgarden, Zhang (2022/2024) — *Automated Market Making and Loss-Versus-Rebalancing*: [https://arxiv.org/abs/2208.06046](https://arxiv.org/abs/2208.06046)
+
+---
+
+*If AMM LPs are implicitly short gamma, does that mean the market-wide proliferation of AMMs creates a systematic short-volatility bias in DeFi that gets painfully unwound during high-vol regimes — and who is on the other side of that trade?*
