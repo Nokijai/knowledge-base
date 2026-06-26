@@ -13,6 +13,8 @@
  */
 
 import { NextRequest } from "next/server";
+import * as Sentry from "@sentry/nextjs";
+import { Logger } from "next-axiom";
 import {
   getProvider,
   FINANCE_SYSTEM_PROMPT,
@@ -191,6 +193,9 @@ function sseEncode(chunk: ChatStreamChunk): string {
 // ── Route handler ──────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  const log = new Logger({ source: "api/chat" });
+  const startMs = Date.now();
+
   // Rate limiting — derive best-effort client IP
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??
@@ -200,6 +205,8 @@ export async function POST(req: NextRequest) {
   pruneOldBuckets();
 
   if (!checkRateLimit(ip)) {
+    log.warn("Rate limit exceeded", { ip });
+    await log.flush();
     return Response.json(
       { error: "Too many requests. Please wait a moment and try again." },
       {
@@ -218,8 +225,12 @@ export async function POST(req: NextRequest) {
     body = validateBody(raw);
   } catch (err) {
     if (err instanceof ValidationError) {
+      log.warn("Validation error", { ip, error: err.message });
+      await log.flush();
       return Response.json({ error: err.message }, { status: 400 });
     }
+    log.warn("Invalid JSON body", { ip });
+    await log.flush();
     return Response.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
@@ -247,6 +258,12 @@ export async function POST(req: NextRequest) {
       try {
         const provider = getProvider();
 
+        log.info("LLM stream started", {
+          ip,
+          mode: body.mode,
+          messageCount: body.messages.length,
+        });
+
         for await (const text of provider.streamChat(messages)) {
           const chunk: ChatStreamChunk = { type: "delta", content: text };
           tryEnqueue(encoder.encode(sseEncode(chunk)));
@@ -255,23 +272,40 @@ export async function POST(req: NextRequest) {
         // Signal successful completion
         const done: ChatStreamChunk = { type: "done", content: "" };
         tryEnqueue(encoder.encode(sseEncode(done)));
+
+        log.info("LLM stream completed", {
+          ip,
+          mode: body.mode,
+          durationMs: Date.now() - startMs,
+        });
       } catch (err) {
-        // Surface error to the client as a terminal SSE event.
-        // The client checks for the "[Error:" prefix on `done` events.
         const errorMsg =
           err instanceof Error ? err.message : "Unknown streaming error.";
+
+        // Report to Sentry
+        Sentry.captureException(err, {
+          extra: { ip, mode: body.mode, messageCount: body.messages.length },
+        });
+
+        // Log to Axiom
+        log.error("LLM stream error", {
+          ip,
+          mode: body.mode,
+          error: errorMsg,
+          durationMs: Date.now() - startMs,
+        });
+
         const errChunk: ChatStreamChunk = {
           type: "done",
           content: `[Error: ${errorMsg}]`,
         };
-        // Second try-catch: controller.enqueue itself can throw if the
-        // client disconnected between the streaming error and this point.
         try {
           controller.enqueue(encoder.encode(sseEncode(errChunk)));
         } catch {
           // Client already gone — nothing to do.
         }
       } finally {
+        await log.flush();
         try {
           controller.close();
         } catch {
