@@ -1,0 +1,40 @@
+---
+title: "Natural Ungrokking: How Models Silently Forget What They Learned"
+category: "daily-tech"
+order: 1
+date: "2026-06-26"
+tags: ["machine-learning", "training-dynamics", "alignment", "grokking", "llm"]
+description: "Natural Ungrokking is when a language model learns a rule mid-training and then silently forgets it — with no trace in the loss curve — because a competing pattern displaces it."
+---
+
+**A model learns a rule, then quietly unlearns it, and you'd never know by watching the loss curve.**
+
+**What it is:** "Natural Ungrokking" (Li & Sreedhar, ICML 2026) is the inverse of the well-known *grokking* phenomenon. In grokking, a model generalises late in training — suddenly "clicking" on a rule long after memorising the data. Natural ungrokking is the reverse: the model *learns* a rule mid-training, then *forgets* it completely, displaced by a competing surface pattern in the corpus. At step 925 of training in their experiment, a model probed for pronoun-gender agreement scores 0.94. By step 3,500 — same data, same model, loss still quietly decreasing — the probe score collapses to near zero.
+
+**Why it matters:** This breaks a fundamental assumption most practitioners rely on: if the loss curve looks healthy, the model is learning correctly. Natural ungrokking shows that rules can vanish with no visible signal. The paper's most alarming finding is an **asymmetry in control**: you can *destroy* a learned rule on demand by injecting counter-evidence into the training stream (reliable, dose-responsive), but you *cannot restore* it even by injecting confirmatory support at up to 450× the natural sustaining rate. Destruction is easy; restoration is essentially impossible. The same dynamics replicate in public Pythia checkpoints, and collapse depth is ordered by model scale — bigger models aren't immune, they just fall harder.
+
+**Quick example or insight:** Imagine you're baking bread. The yeast (rule) activates perfectly at first, then a competing mould (surface pattern) colonises the dough and out-competes the yeast entirely — but the dough still *looks* like it's rising. The only way you'd notice is by tasting the result, not by watching the bowl.
+
+The survival of a rule can be predicted from a single corpus statistic — *support frequency*: how often the training stream shows the rule winning against its competitor. Once that margin tips, the log-probability gap between the rule and its competitor crosses zero within ~100 training steps, and no amount of later support can reverse it.
+
+```python
+# Conceptual analogy: support frequency decides fate
+rule_support      = count_rule_wins(corpus)      # e.g. 1000
+competitor_support = count_competitor_wins(corpus) # e.g. 1100
+
+# If competitor > rule, the rule is "doomed" — data-to-param ratio
+# only modulates HOW DEEP the collapse is, not WHETHER it happens.
+survival_margin = rule_support - competitor_support
+# survival_margin < 0  →  rule will collapse mid-training
+# No amount of injected support later can fix this once collapse begins.
+```
+
+The paper formalises this with a log-probability margin signal: let $p_r(t)$ be the model's assigned probability to the rule completion and $p_c(t)$ to the competitor. Collapse begins when:
+
+$$\log p_r(t) - \log p_c(t) \rightarrow 0$$
+
+and once this margin crosses zero, behaviour flips — and stays flipped.
+
+**📎 Source:** https://arxiv.org/abs/2606.26050
+
+If training data composition can silently erase knowledge you thought a model had learned — and if that erasure is essentially irreversible — what else might LLMs have "naturally ungrokked" from their pretraining corpus that we haven't thought to probe for?
