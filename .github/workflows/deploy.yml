@@ -52,7 +52,7 @@ jobs:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           SENTRY_DSN_KB: ${{ secrets.SENTRY_DSN_KB }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          NEXT_AXIOM_TOKEN: ${{ secrets.NEXT_AXIOM_TOKEN }}
+          NEXT_PUBLIC_AXIOM_TOKEN: ${{ secrets.NEXT_PUBLIC_AXIOM_TOKEN }}
         run: |
           OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
@@ -84,8 +84,8 @@ jobs:
             -e SENTRY_DSN="$SENTRY_DSN_KB" \
             -e NEXT_PUBLIC_SENTRY_DSN="$SENTRY_DSN_KB" \
             -e SENTRY_AUTH_TOKEN="$SENTRY_AUTH_TOKEN" \
-            -e NEXT_AXIOM_TOKEN="$NEXT_AXIOM_TOKEN" \
-            -e NEXT_AXIOM_DATASET="knowledge-base" \
+            -e NEXT_PUBLIC_AXIOM_TOKEN="$NEXT_PUBLIC_AXIOM_TOKEN" \
+            -e NEXT_PUBLIC_AXIOM_DATASET="knowledge-base" \
             ghcr.io/$OWNER/knowledge-base:latest
           docker image prune -f
           sleep 3
