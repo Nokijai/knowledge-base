@@ -1,0 +1,81 @@
+---
+title: "The Unified Theory of Order Flow, Market Impact, and Volatility"
+category: "daily-finance"
+order: 1
+date: "2026-06-27"
+tags: ["market microstructure", "rough volatility", "market impact", "Hawkes processes", "order flow"]
+description: "A single parameter H0 ≈ 3/4 pins down rough volatility, the square-root impact law, and volume roughness simultaneously -- all from one Hawkes order-flow model."
+---
+
+**Four of the most stubborn empirical puzzles in market microstructure -- persistent order flow, rough volatility, rough volume, and the square-root impact law -- turn out to be the same phenomenon wearing different masks, all governed by a single number.**
+
+## What it is
+
+Muhle-Karbe, Ouazzani Chahdi, Rosenbaum, and Szymanski (2026) propose a two-layer Hawkes process model for order flow that, in its scaling limit, simultaneously reconciles four key empirical stylised facts:
+
+- **Core orders** -- autonomous trading decisions (portfolio rebalancing, metaorder execution, trend-following) -- modelled as independent Hawkes processes with power-law kernels near criticality.
+- **Reaction flow** -- HFTs, market-makers, and momentum traders responding to observed activity -- forms a second Hawkes layer driven by aggregate (core + reaction) flow.
+
+All observable market quantities collapse into functions of a **single structural parameter** $H_0$, the Hurst index of the signed core flow.
+
+| Observable | Formula | Value at $H_0 = 3/4$ |
+|---|---|---|
+| Signed order flow Hurst index | $H_0$ | 0.75 (long memory) |
+| Unsigned volume Hurst index | $H_0 - 1/2$ | 0.25 (rough) |
+| Volatility Hurst index | $2H_0 - 3/2$ | ~0.0 (very rough) |
+| Market impact exponent | $2 - 2H_0$ | 0.5 (square-root law) |
+
+No-arbitrage constraints force volatility to be rough -- this is derived from the model structure, not assumed.
+
+## Why it matters
+
+Before this work, quant practitioners calibrated three separate siloed models:
+
+1. A **rough volatility model** (rBergomi, rough Heston) to price options -- Hurst parameter around 0.05--0.15
+2. A **market impact model** (Almgren-Chriss) to size execution algorithms -- square-root impact fitted to slippage data
+3. A **microstructure model** (Hawkes LOB) to analyse order flow dynamics
+
+This paper reveals they share a common genetic code. Estimate $H_0$ once from signed order flow data and you automatically get consistent estimates for volatility roughness, volume roughness, and impact concavity.
+
+**Practical implications:**
+- **Execution desks** can derive impact parameters from microstructure data rather than fitting to realised slippage.
+- **Volatility surface calibration** gains a cross-check: if your rHeston Hurst parameter conflicts with your $H_0$ estimate, the model is misspecified.
+- **Risk models** gain internal coherence: the same structural parameter governs both your daily P&L distribution and your intraday execution costs.
+
+## Quick example / Mathematical insight
+
+The square-root law of market impact is observed universally across assets and venues:
+
+$$\Delta P \propto \sqrt{Q}$$
+
+Impact exponent = 1/2. Plugging $H_0 = 3/4$ into the formula:
+
+$$\text{impact exponent} = 2 - 2H_0 = 2 - 2 \times \frac{3}{4} = \frac{1}{2} \checkmark$$
+
+And rough volatility Hurst estimates cluster at 0.05--0.15 empirically. From the theory:
+
+$$H_{\text{vol}} = 2H_0 - \frac{3}{2} = 2 \times 0.75 - 1.5 \approx 0$$
+
+The empirical estimate $H_0 \approx 3/4$ was obtained from 40 liquid stocks (BMLL Technologies data, 2021--2024). Key diagnostic: pure fractional Brownian motion gives scale-dependent Hurst estimates (0.5 at tick frequency, rising to 0.65 at hourly scale). A **mixed fractional Brownian motion** specification stabilises at 0.75--0.80 across all sampling frequencies.
+
+```python
+# One parameter to rule them all
+H0 = 0.75
+
+H_signed_flow   = H0           # 0.75  persistent signed order flow
+H_unsigned_vol  = H0 - 0.5     # 0.25  rough trading volume
+H_volatility    = 2*H0 - 1.5   # 0.00  very rough volatility
+impact_exponent = 2 - 2*H0     # 0.50  square-root impact law
+
+# All four consistent with empirical findings from entirely separate literatures
+```
+
+The structural glue is the constraint $\alpha_1 = 2\alpha_0$ -- the reaction flow tail exponent must equal twice the core flow tail exponent. This collapses the parameter space and makes the unification possible.
+
+## 📎 Source
+
+Muhle-Karbe, J., Ouazzani Chahdi, Y., Rosenbaum, M., Szymanski, G. (2026). *A unified theory of order flow, market impact, and volatility.* arXiv:2601.23172. https://arxiv.org/abs/2601.23172
+
+---
+
+*If persistent order flow, rough volatility, rough volume, and the square-root impact law are all facets of the same $H_0$, what happens when $H_0$ shifts in a market stress event -- do execution costs, option prices, and microstructure dynamics all move together in a predictable, internally consistent way?*
