@@ -1,0 +1,46 @@
+---
+title: "Overfitting as Compression: When Memorisation Is the Point"
+category: "daily-tech"
+order: 1
+date: "2026-06-28"
+tags: ["compression", "transformers", "information-theory", "arithmetic-coding", "neural-networks"]
+description: "Deliberately overfitting a tiny transformer on a single file turns the model's memorisation into a powerful compressor — flipping the usual ML rule on its head."
+---
+
+**What if overfitting wasn't a bug, but the entire algorithm?**
+
+**What it is:** Most machine learning folklore treats overfitting as the enemy — a model that memorises training data instead of generalising is considered broken. But there's a clever inversion: if you *want* to memorise one specific file as precisely as possible, you can train a small transformer to predict every next byte in that file, then feed those predictions into an **arithmetic coder** to produce a compressed bitstream. The compressed output is just the model weights (≈900 KB) plus the entropy-coded residual surprises. More confident predictions → fewer bits needed → better compression. The model itself is the dictionary.
+
+**Why it matters:** This isn't just a curiosity — on structured data it genuinely beats traditional compressors. A 100 MB NYC taxi CSV file compresses to about 7 MB (~0.5 bits/byte), vs. ~27 MB with zip. The technique connects two fields that rarely talk to each other: **rate-distortion theory** from information theory and **next-token prediction** from deep learning. The link was known theoretically (Hutter Prize contestants have used LMs this way since the early 2000s), but cheap compute and modern transformer architectures now make it practical for arbitrary files.
+
+**Quick example or insight:** The connection to compression is via arithmetic coding. If a model assigns probability $p_i$ to the next byte, an arithmetic coder can encode that byte in approximately $-\log_2(p_i)$ bits. A perfect predictor would need 0 bits. The total compressed size is:
+
+$$L \approx \sum_{i=1}^{N} -\log_2 p_i$$
+
+which is exactly the cross-entropy loss accumulated over the file. *Minimising training loss and minimising compressed file size are the same objective.*
+
+The model architecture is deliberately tiny — 2 transformer layers, hidden dim 128, 4 attention heads, ~900 KB total with weight tying — since the weights themselves must ship as part of the compressed artefact:
+
+```python
+# Conceptual training loop (simplified)
+model = PymTransformer(layers=2, hidden=128, heads=4, vocab=258)
+# vocab = 256 bytes + PAD + BOS
+
+for epoch in range(num_epochs):
+    for window in sliding_windows(file_bytes, size=256, stride=128):
+        context, targets = window[:128], window[128:]
+        logits = model(context)
+        loss = cross_entropy(logits, targets)
+        loss.backward()
+        # NO dropout, NO weight decay — we WANT to overfit
+        optimizer.step()
+
+# After training: feed model predictions into arithmetic coder
+compressed = arithmetic_encode(file_bytes, predict_fn=model)
+```
+
+Note the deliberate absence of dropout and weight decay — regularisation actively hurts here. The goal is zero generalisation and total memorisation.
+
+**📎 Source:** [github.com/samyak112/pym-particles](https://github.com/samyak112/pym-particles) · [HN discussion](https://news.ycombinator.com/item?id=48644463)
+
+If a neural network trained to predict your data *is* a compressed representation of that data, the question becomes: at what point does "a very good model" and "a perfect compressor" converge?
