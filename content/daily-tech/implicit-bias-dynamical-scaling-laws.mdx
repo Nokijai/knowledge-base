@@ -1,0 +1,60 @@
+---
+title: "Why Gradient Descent Secretly Creates Scaling Laws All the Way Through Training"
+category: "daily-tech"
+order: 1
+date: "2026-06-29"
+tags: ["machine-learning", "scaling-laws", "optimization", "implicit-bias", "theory"]
+description: "A new ICLR 2026 paper proves that gradient descent's implicit bias doesn't just shape final models — it governs the entire training trajectory through two novel dynamical scaling laws."
+---
+
+**The famous neural scaling laws (bigger model + more data = better performance) have always been measured at the finish line — but a new ICLR 2026 paper shows those power-law patterns are secretly running the *entire* race.**
+
+**What it is:**
+"Implicit bias" is the tendency of gradient descent to prefer certain solutions even without explicit regularization — for example, it quietly biases toward minimum-norm weights. The paper *"Implicit bias produces neural scaling laws in learning curves"* (D'Amico et al., arXiv 2505.13230) proves that this same bias generates **two new *dynamical* scaling laws** governing how test error evolves *during* training as a function of the model's weight norm — not just at convergence. Together, these two laws multiply to recover the classic end-of-training power law you already know.
+
+**Why it matters / How it's used:**
+Classical scaling law papers (Chinchilla, Hestness et al.) only describe the final snapshot: train enough, and error ∝ data$^{-\gamma}$. This paper gives a richer picture: you can predict where a model is *mid-training* using its norm trajectory, and the exponent $\gamma$ decomposes as $\gamma = \gamma_1 \cdot \gamma_2$ — one exponent for early training, one for late training. This decomposition was validated across CNNs, ResNets, and Vision Transformers on MNIST, CIFAR-10, and CIFAR-100, and it holds even with different optimizers and weight decay. Practically, this could let you detect training anomalies early or forecast final performance without waiting for convergence.
+
+**Quick example or insight:**
+The "aha!" is the choice of variable. Plotting test error against *training epochs* shows noisy, dataset-dependent curves. But plot it against the model's **spectral complexity norm** (a measure of how much the network amplifies inputs), and suddenly all your different dataset-size runs collapse onto a single master curve:
+
+$$\hat{\epsilon}_{\text{gen}}(\lambda) \approx k_1 \cdot \lambda^{-\gamma_1} \qquad \text{(early training, all dataset sizes collapse)}$$
+
+$$\lambda_{\text{opt}} \approx k_2 \cdot \alpha^{\gamma_2} \qquad \text{(optimal norm grows with dataset size } \alpha \text{)}$$
+
+Combined at convergence:
+
+$$\hat{\epsilon}_{\text{gen}}(\alpha) \sim \alpha^{-\gamma_1 \gamma_2} = \alpha^{-\gamma}$$
+
+For a simple perceptron with logistic loss, the authors derive this *analytically*: $\gamma_1 = 1/2$, $\gamma_2 = 1$, giving $\gamma = 1/2$ — the known perceptron generalization exponent, now explained from first principles.
+
+```python
+# Conceptual illustration: norm-indexed learning curve collapse
+import numpy as np
+
+# For a perceptron: generalization error as function of weight norm (lambda)
+# and training set fraction (alpha)
+def epsilon_early(lam, k1=1.0, gamma1=0.5):
+    """Early training: dataset size doesn't matter, only norm does"""
+    return k1 * lam**(-gamma1)
+
+def lambda_opt(alpha, k2=1.0, gamma2=1.0):
+    """Optimal norm grows with dataset size"""
+    return k2 * alpha**gamma2
+
+# At convergence: test error scales as alpha^(-gamma1*gamma2)
+alphas = np.array([0.1, 0.5, 1.0, 2.0, 5.0])
+gamma = 0.5 * 1.0  # gamma1 * gamma2
+errors_at_convergence = alphas**(-gamma)
+
+# The surprising part: mid-training curves for ALL alpha values
+# collapse when you rescale by (lambda_opt, epsilon_opt)
+print("Convergence exponent (predicted):", gamma)
+# → 0.5  ✓ matches the known perceptron scaling law
+```
+
+The magic: a metric as abstract as *spectral complexity* turns out to be the natural clock of learning.
+
+**📎 Source:** [arXiv:2505.13230](https://arxiv.org/abs/2505.13230) — accepted at ICLR 2026
+
+If gradient descent is unknowingly sculpting neat power laws into every model it trains, what other hidden mathematical structures are silently organizing the chaos of deep learning?

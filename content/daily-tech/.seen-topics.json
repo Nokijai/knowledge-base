@@ -8,5 +8,6 @@
   "parallel-dp-gpu-kernels",
   "reasoning-as-attractor-dynamics",
   "natural-ungrokking",
-  "overfitting-as-compression"
+  "overfitting-as-compression",
+  "implicit-bias-dynamical-scaling-laws"
 ]
