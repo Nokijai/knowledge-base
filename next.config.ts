@@ -4,12 +4,11 @@ import { withAxiom } from "next-axiom";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  experimental: {
-    outputFileTracingIncludes: {
-      // Ensure gray-matter (used by getPostBySlug in /api/chat) is bundled
-      // in the standalone output — Next.js file-tracing misses it otherwise.
-      "/api/chat": ["./node_modules/gray-matter/**/*"],
-    },
+  // Ensure gray-matter (used by getPostBySlug in /api/chat) is included in
+  // the standalone output — Next.js file-tracing misses packages used only
+  // inside React.cache() server functions called from API routes.
+  outputFileTracingIncludes: {
+    "/api/chat": ["./node_modules/gray-matter/**/*"],
   },
 };
 
