@@ -19,6 +19,13 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/content ./content
+# Copy gray-matter (and its deps) explicitly — Next.js standalone file-tracing
+# misses packages used only inside cached API-route server functions.
+COPY --from=builder /app/node_modules/gray-matter ./node_modules/gray-matter
+COPY --from=builder /app/node_modules/js-yaml ./node_modules/js-yaml
+COPY --from=builder /app/node_modules/kind-of ./node_modules/kind-of
+COPY --from=builder /app/node_modules/section-matter ./node_modules/section-matter
+COPY --from=builder /app/node_modules/strip-bom-string ./node_modules/strip-bom-string
 
 USER nextjs
 EXPOSE 3000
