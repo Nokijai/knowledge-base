@@ -1,0 +1,53 @@
+---
+title: "Looped Transformers: Reasoning in Silence"
+category: "daily-tech"
+order: 1
+date: "2026-07-01"
+tags: ["transformers", "reasoning", "inference", "architecture", "LLM"]
+description: "Looped transformers reuse the same weight block multiple times at inference, letting a model 'think' in latent space without generating a single extra token — and a 3.5B model can reach the reasoning depth of a 50B model."
+---
+
+**What if a model could think harder without writing anything down — or getting bigger?** That's the core promise of *looped transformers*, a quietly powerful architecture idea that's been proven out theoretically at ICLR 2025 and validated at scale with the real Huginn-0125 model.
+
+## What it is
+
+A standard transformer has a fixed stack of $N$ layers. A **looped transformer** instead has a small block of $k$ layers that it *iterates* $L$ times — meaning the same weights process the hidden state over and over. The effective depth is $k \times L$, but the parameter count only scales with $k$.
+
+$$\text{Effective depth} = k \times L, \quad \text{Parameters} \propto k$$
+
+At each loop iteration, the model's internal (latent) hidden state is refined — silently, without emitting any tokens. Crucially, $L$ is chosen **at inference time**, not baked in during training. Want more reasoning power? Just loop more. No retraining required.
+
+## Why it matters
+
+Chain-of-thought (CoT) reasoning — the "let's think step by step" trick — works by giving a model extra token budget to reason explicitly. It's great, but it needs specialized training data, burns context window, and only captures reasoning that can be verbalized.
+
+Looped transformers are different. The ICLR 2025 paper *"Reasoning with Latent Thoughts: On the Power of Looped Transformers"* (Saunshi et al.) proves that **T loops ≈ T steps of chain-of-thought**, but entirely inside the model's hidden space. No visible scratchpad, no extra tokens, no chain-of-thought training corpus needed.
+
+The Feb 2025 paper from the University of Maryland team built **Huginn-0125** to test this at scale: a 3.5B-parameter model trained on 800B tokens that, with enough loops, achieves reasoning performance equivalent to a **~50B parameter model**. That's a 14× effective compute amplification at inference, for free.
+
+## Quick example or insight
+
+Here's the conceptual loop in pseudocode:
+
+```python
+def looped_forward(x, block, num_loops=8):
+    """
+    x: input hidden state
+    block: a k-layer transformer block (fixed weights)
+    num_loops: chosen at inference time — more = deeper reasoning
+    """
+    for _ in range(num_loops):
+        x = block(x)   # same weights, repeated application
+    return x
+```
+
+Each call to `block(x)` refines the latent state — think of it as one silent reasoning step. The elegant bit: you can adaptively set `num_loops` per token or per prompt based on difficulty, giving you **per-token adaptive compute** with zero architectural overhead.
+
+The theoretical result is striking: for problems like multi-hop arithmetic, modular addition, and $p$-hop induction, a $k$-layer block looped $L$ times **nearly matches** a full $kL$-layer non-looped model — while dramatically outperforming a non-looped $k$-layer model. Depth matters for reasoning, not just width.
+
+## 📎 Sources
+
+- Saunshi et al., *Reasoning with Latent Thoughts: On the Power of Looped Transformers*, ICLR 2025: [arxiv.org/abs/2502.17416](https://arxiv.org/abs/2502.17416)
+- Geiping et al., *Scaling up Test-Time Compute with Latent Reasoning: A Recurrent Depth Approach* (Huginn model), arXiv 2025: [arxiv.org/abs/2502.05171](https://arxiv.org/abs/2502.05171)
+
+If scaling laws say "more parameters = more capability," looped transformers whisper back: *"or just go deeper, with the same parameters, and let the thinking happen where nobody can see it."*
