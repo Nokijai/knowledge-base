@@ -1,0 +1,84 @@
+---
+title: "The AI Premium: A New Equity Factor Built from Token Consumption Data"
+category: "daily-finance"
+order: 1
+date: "2026-07-02"
+tags: ["factor-investing", "AI", "equity-premium", "market-microstructure", "alternative-data"]
+description: "A June 2026 paper constructs an equity factor from 380 trillion tokens of real AI usage data and finds that high-AI-beta stocks earn 64.1 basis points per week in excess returns."
+---
+
+**What if you could measure a firm's AI adoption intensity in real time — not from earnings calls or job postings, but from the raw token consumption data of 400+ LLMs — and turn it into a tradable equity factor?**
+
+## What it is
+
+The **AI Premium** is an equity risk factor constructed from firm-level AI token consumption rather than traditional financial data. Borri, Liu, and Tsyvinski (arXiv:2606.30583, June 2026) use a proprietary dataset from OpenRouter — covering ~380 trillion tokens across 400+ large language models and roughly 2% of global monthly AI token consumption — to build a high-frequency **AI Factor**.
+
+The pipeline is:
+
+1. **AI Factor construction:** For each firm, measure the growth rate of tokens consumed, dollars spent, and active users across all LLM providers.
+2. **AI Beta estimation:** Run a time-series regression of stock $i$'s excess return $r_{i,t}$ on the AI Factor $F_t$:
+$$r_{i,t} = \alpha_i + \beta_i^{AI} F_t + \varepsilon_{i,t}$$
+3. **Long-short portfolio:** Sort stocks on estimated $\hat{\beta}_i^{AI}$ and go long the top quintile, short the bottom quintile.
+
+The resulting **value-weighted long-short portfolio earns 64.1 basis points per week** — economically massive for a systematic equity strategy.
+
+## Why it matters
+
+This is not just another alpha signal. The paper establishes that:
+
+- **Frontier AI usage drives the premium.** Only closed-source (frontier) model consumption — by paying, seasoned users with long prompts — generates the return signal. Casual use and open-weight models carry no premium. This separates genuine operational integration from superficial AI "exposure."
+- **The factor is sector-agnostic.** The AI Premium extends beyond tech into consumer-facing and capital-heavy industries, making it a broad economy-wide risk factor, not a sector bet.
+- **Emerging markets are decoupled.** The premium is absent in China and other emerging markets, suggesting a structural divergence in AI economic impact.
+- **Labor market implications are embedded.** Firms with high AI adoption in interaction-heavy, nonroutine communicative work see *positive* pricing; firms with AI exposure in analytical/scientific operations see *negative* pricing pressure.
+
+On the quant desk, this matters for **factor model construction**: the AI Factor appears orthogonal to the usual suspects (value, momentum, quality, size), representing a genuinely new dimension of systematic risk/reward.
+
+## Quick example or insight
+
+The premium's heterogeneity by signal quality is stark:
+
+| AI Usage Signal | AI Premium Magnitude |
+|---|---|
+| Frontier (closed-source) model tokens | **Large and significant** |
+| Paying + seasoned users | **Large and significant** |
+| Long prompts (intensive margin) | **Large and significant** |
+| Open-weight model tokens | Negligible |
+| Casual / free-tier users | Negligible |
+
+In practical terms, this means a naive "does the firm mention AI?" screen would fail completely. The signal lives in the *intensity and quality* of actual machine inference, not stated intent.
+
+A simple Python sketch of the factor construction logic:
+
+```python
+import pandas as pd
+
+# token_df: rows = firms, columns = weekly token consumption by model type
+# Returns: AI factor scores per firm
+
+def compute_ai_factor(token_df: pd.DataFrame, model_tier: str = "frontier") -> pd.Series:
+    """
+    Compute AI factor as growth rate in token consumption for a given model tier.
+    model_tier: 'frontier' (closed-source) or 'open_weight'
+    """
+    tier_cols = [c for c in token_df.columns if model_tier in c]
+    tier_usage = token_df[tier_cols].sum(axis=1)
+    # Weekly growth rate
+    ai_factor = tier_usage.pct_change().fillna(0)
+    return ai_factor
+
+def ai_beta(stock_returns: pd.Series, ai_factor: pd.Series, window: int = 52) -> float:
+    """Rolling OLS beta of stock returns on AI factor."""
+    cov = stock_returns.rolling(window).cov(ai_factor)
+    var = ai_factor.rolling(window).var()
+    return (cov / var).iloc[-1]
+```
+
+The key engineering challenge — and competitive moat — is access to *proprietary, granular* token-level data. Public proxies (AI job postings, earnings call mentions, patent filings) capture far noisier signals.
+
+## 📎 Source
+
+Borri, N., Liu, Y., & Tsyvinski, A. (2026). *AI Premium*. arXiv:2606.30583. https://arxiv.org/abs/2606.30583
+
+---
+
+*→ The deeper provocation: if frontier AI adoption is now a priced risk factor, does that mean the market is rationally pricing a productivity regime shift — or is it another momentum-fuelled narrative that will revert? And if the premium persists, at what point does the smart money arbitrage it away by disclosing their own token consumption data?*
