@@ -1,0 +1,51 @@
+---
+title: "Salt: Systems Programming with Zero-Cost, Z3-Verified Contracts"
+category: "daily-tech"
+order: 1
+date: "2026-07-03"
+tags: ["systems-programming", "formal-verification", "SMT-solver", "compiler", "Z3"]
+description: "Salt is a new systems language that bakes Microsoft's Z3 SMT solver into the compiler, giving you mathematically-proven function contracts at zero runtime cost."
+---
+
+**What if your compiler could call a theorem prover for every function call — and then delete all the checks it proved correct?** That's the core idea behind Salt, a new systems programming language that treats mathematical verification not as a luxury add-on but as a first-class compilation step.
+
+**What it is:**
+Salt is a compiled, C-performance language that embeds the Z3 SMT solver (Satisfiability Modulo Theories — a type of automated theorem prover from Microsoft Research) directly into its build pipeline. You annotate functions with `requires()` preconditions and `ensures()` postconditions. The compiler then passes every call site and return site to Z3 for verification. If Z3 *proves* the condition holds, the check is **elided entirely** — zero overhead. If it finds a violation, you get a concrete counterexample before your code ever runs.
+
+**Why it matters:**
+The classic trade-off in systems programming is safety vs. performance. C is fast but lets you shoot yourself in the foot. Rust enforces safety via a borrow checker, which is powerful but has a steep learning curve. Salt takes a third path: instead of a type-level discipline (lifetimes) or runtime checks (bounds checks that are always paid), it uses a proof-based approach where verified invariants disappear at compile time. Memory management uses *arenas* — a region allocator where all memory is freed at once at region exit — sidestepping both GC pauses and borrow checker complexity. Codegen goes through MLIR (the same compiler IR used by TensorFlow and PyTorch), which enables automatic loop tiling for matrix operations, hitting `clang -O3` parity without hand-tuning.
+
+**Quick example or insight:**
+
+```salt
+// Z3 proves b != 0 at every call site — the division is safe,
+// and no runtime guard is emitted.
+fn divide(a: i32, b: i32) -> i32
+    requires(b != 0)
+{
+    return a / b;
+}
+
+// Z3 checks every return path satisfies the postcondition.
+fn clamp(val: i32) -> i32
+    ensures(result >= 0 && result <= 100)
+{
+    if val < 0   { return 0;   }
+    if val > 100 { return 100; }
+    return val;
+}
+```
+
+The "aha" moment: when you run `sp add crypto`, the package manager *shows you the contracts* the library expects: `encrypt requires(key.len() >= 32)`. Contract verification crosses package boundaries — your whole dependency tree is covered, not just your own code.
+
+A real proof of concept is Basalt, a Llama 2 inference engine written in ~600 lines of Salt with every matrix-multiply kernel carrying a Z3 proof of in-bounds array access, hitting ~870 tokens/second at parity with equivalent C.
+
+The key insight can be stated as a clean invariant: for any function $f$ annotated with `requires(P)` and `ensures(Q)`, the compiler emits a proof obligation $P \Rightarrow Q$ discharged by Z3 at build time. If the proof succeeds, the generated machine code contains *neither* $P$ *nor* $Q$ — they vanish.
+
+$$
+\text{If } \vdash P \Rightarrow Q \text{ (Z3)}, \quad \text{then binary}(f) \equiv \text{binary}(f_{\text{unchecked}})
+$$
+
+**📎 Source:** [https://salt-lang.dev](https://salt-lang.dev) · GitHub: [https://github.com/bneb/lattice](https://github.com/bneb/lattice)
+
+If compile-time provers can already verify Llama 2 kernels at C speed, the next question is which class of programs will be the first to demand this as a default — not a research curiosity.
