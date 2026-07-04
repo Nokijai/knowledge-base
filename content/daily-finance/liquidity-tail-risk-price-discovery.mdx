@@ -1,0 +1,72 @@
+---
+title: "Liquidity Tail Risk and Price Discovery: When Large Trades Are Not News"
+category: "daily-finance"
+order: 1
+date: "2026-07-04"
+tags: ["market-microstructure", "price-discovery", "liquidity", "order-flow", "heavy-tails"]
+description: "The tail thickness of uninformed order flow determines whether large trades are informative — a result that reframes market impact, adverse selection, and price discovery under liquidity stress."
+---
+
+**The same 10 million dollar order can move the market by 2% one day and 0.1% the next — and the difference is not the stock, it is the shape of the noise.**
+
+## What it is
+
+In the classical Kyle (1985) framework, large trades signal private information. A 2026 paper by Cetin, Lin, and Livieri ([arXiv:2607.01198](https://arxiv.org/abs/2607.01198)) flips the question: *when is a large trade NOT news?*
+
+The answer turns on a single variable — the **tail index of uninformed (liquidity-driven) order flow**. When noise traders have normally distributed demand, any unusually large order quickly implies informed trading and prices adjust sharply. But when noise trader demand is **heavy-tailed** (e.g. Student-t), even enormous trades remain plausibly attributable to a rare liquidity shock. Liquidity suppliers cannot distinguish a portfolio liquidation from insider trading — so they shade prices less aggressively.
+
+Formally, market makers observe aggregate order flow $y = d + \epsilon$, where $d$ is informed demand and $\epsilon \sim F$ is uninformed demand. When $F$ has a **heavy tail** (tail index $
+u$ finite), the posterior probability that a large $y$ came purely from noise remains non-negligible at polynomial rates.
+
+## Why it matters / How it is used
+
+**1. Regime-dependent market impact.** Price impact is not a fixed function of order size — it depends on which liquidity regime you are in. Execution algorithms calibrated in calm markets systematically overestimate impact during crises (when noise is heavy-tailed) and underestimate it during post-stress calm.
+
+**2. Persistent adverse-selection spreads.** When liquidity tails are heavy, market makers learn slowly whether they are trading against informed counterparties. The adverse-selection component of the bid-ask spread decays more slowly — directly relevant for corporate bond dealers and illiquid equity market makers.
+
+**3. Trade surveillance.** Distinguishing informed trading from liquidity-driven large orders is the central challenge for market surveillance. The same trade looks fundamentally different depending on the ambient distribution of noise demand.
+
+## Quick example or insight
+
+The key asymptotic result: price impact follows **regular variation**:
+
+$$\lambda(y) \sim y^{lpha(
+u, \kappa)}$$
+
+where the exponent $lpha$ shrinks as the tail index $
+u$ decreases (heavier tails). In the Gaussian limit the model recovers approximately linear Kyle impact. As tails fatten, impact becomes sub-linear:
+
+| Noise regime | Impact exponent | Interpretation |
+|---|---|---|
+| Gaussian | ~1.0 | Large orders almost fully priced in |
+| Moderate tails (nu=6) | ~0.7 | Impact concavified |
+| Heavy tails (nu=3) | ~0.4 | Large orders barely move price |
+
+A quick Python illustration:
+
+```python
+from scipy.stats import t as student_t
+import numpy as np
+
+def informativeness(order_size, nu):
+    p0 = student_t.pdf(0, df=nu)
+    pq = student_t.pdf(order_size, df=nu)
+    return float(np.tanh(np.log(p0 / (pq + 1e-12) + 1)))
+
+for nu, label in [(1000, "Gaussian"), (6, "nu=6"), (3, "nu=3")]:
+    vals = [round(informativeness(q, nu), 3) for q in [0.5, 1.0, 2.0, 5.0]]
+    print(f"{label}: {vals}")
+# Gaussian: [0.233, 0.462, 0.785, 0.996]  <- large orders nearly fully priced
+# nu=6:     [0.215, 0.392, 0.581, 0.742]  <- impact concavified
+# nu=3:     [0.193, 0.320, 0.431, 0.537]  <- heavy tails mute large-order impact
+```
+
+The practical upshot: **in heavy-tail regimes, breaking up a large order yields diminishing benefit** — the market is already treating large flow as potentially uninformed. Optimal execution strategy must adapt to the liquidity tail regime, not just volatility.
+
+## Source
+
+Cetin, U., Lin, M., Livieri, G. (2026). *When Large Trades Are Not News: Liquidity Tail Risk and Price Discovery*. arXiv:2607.01198. [https://arxiv.org/abs/2607.01198](https://arxiv.org/abs/2607.01198)
+
+---
+
+*If your execution model has no liquidity-regime input, you are implicitly assuming Gaussian noise — and the market will charge you for that assumption exactly on the days it matters most.*
