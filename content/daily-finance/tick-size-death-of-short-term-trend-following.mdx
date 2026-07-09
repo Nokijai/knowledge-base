@@ -1,0 +1,68 @@
+---
+title: "The Tick-Size Death of Short-Term Trend-Following"
+category: "daily-finance"
+order: 1
+date: "2026-07-09"
+tags: ["market-microstructure", "trend-following", "tick-size", "HFT", "CTA"]
+description: "Short-term trend-following died post-2009 — not from capacity crowding or electronification, but because HFT market-making broke the self-reinforcing feedback loop on small-tick contracts."
+---
+
+**A strategy that worked for 200 years suddenly stopped — and the culprit isn't what anyone thought.**
+
+## What it is
+
+Kurth, Eisler, Rej, and Bouchaud (2026) show that the post-2009 collapse of short-term trend-following returns is driven by a **microstructural mechanism tied to volatility-normalized tick size**. Using ~100 liquid futures contracts from 1995–2025, they demonstrate that trend PnL has collapsed on **small-tick** contracts (equity indices, FX) across all signal horizons, while remaining essentially intact on **large-tick** contracts (bonds, commodities). Neither asset class, nor liquidity, nor electronification timing replicates this dichotomy — only tick size does.
+
+The key variable is the volatility-normalized tick size:
+
+$$\bar{\rho}_{i,m} = \frac{1}{D_m}\sum_{t=1}^{D_m} \frac{\Psi_i(t)}{\sigma_i(t)}$$
+
+where $\Psi_i(t)$ is the tick size and $\sigma_i(t)$ is the daily volatility of contract $i$. When $\bar{\rho}$ is small (small-tick), the limit order book is **sparse** — each price level has thin depth. When $\bar{\rho}$ is large (large-tick), the book is **dense** — multiple orders cluster at the same price level, creating residual depth.
+
+## Why it matters
+
+This is the first paper to provide a **structural, not cyclical, explanation** for why CTA returns flatlined. The mechanism is a self-reinforcing feedback loop:
+
+1. Trend signals trigger directional trades
+2. Market impact of those trades reinforces the price move
+3. This reinforces the signal for the next participant
+4. The loop requires **aggressive execution at reasonable cost**
+
+Post-2008, HFT-dominated market making replaced traditional inventory-tolerant market makers. HFT firms systematically **withdraw liquidity** in front of predictable directional flow (like CTA orders). On small-tick contracts, this withdrawal removes the residual depth that previously supported fast trend execution. As trend-followers are forced out, the feedback loop breaks at the input — the signal itself degrades. On large-tick contracts, residual depth at the best quote remains sufficient, so the loop continues.
+
+This matters for every systematic trader: **tick size is the primary filter for strategy viability**, not asset class or liquidity. A trend strategy on the S&P 500 E-mini (small-tick) faces a structurally broken loop; the same strategy on 30-year bond futures (large-tick) still works.
+
+## Quick insight
+
+The paper provides a devastating within-contract test. On small-tick contracts, during **low-volatility periods** (when $\Psi/\sigma$ rises, making the contract microstructurally behave like a large-tick contract), trend PnL still accumulates. The breakdown is specifically on **large-return days** ($>1\sigma$) post-2008 — exactly when the feedback loop should be strongest but HFT liquidity withdrawal is most aggressive.
+
+Even more striking: switching to limit-order execution doesn't help. Passive execution avoids the liquidity withdrawal problem but **breaks the self-reinforcing loop by design** — passive orders don't generate aggressive volume, so they can't participate in the price-impact-mediated reinforcement that makes trends exist in the first place. The missed-opportunity cost of limit orders in trending markets exceeds the adverse-selection cost.
+
+```python
+# Simplified: volatility-normalized tick size classifier
+def classify_tick_regime(tick_size, daily_vol, threshold=0.002):
+    \"\"\"Small-tick if tick/vol < threshold, large-tick otherwise.\"\"\"
+    rho = tick_size / daily_vol
+    return "small-tick" if rho < threshold else "large-tick"
+
+# Post-2009 trend strategy viability check
+def trend_viable(contract):
+    rho_bar = mean(contract.tick / contract.daily_vol)
+    if rho_bar < 0.002:
+        return "Structurally broken -- HFT liquidity withdrawal kills the feedback loop"
+    else:
+        return "Viable -- residual depth sustains the self-reinforcing mechanism"
+```
+
+The four candidate explanations tested and rejected:
+
+| Hypothesis | Why it fails |
+|---|---|
+| Capacity constraints | CTA AUM peaked *after* PnL flatlined; Sharpe drag from 1% participation is ~0.1, not enough to explain 0.7 to 0 collapse |
+| Market electronification | Gradual process vs. sudden PnL break; sector timing doesn't match |
+| CTA vs. order-flow regime change | Correlation sign flip doesn't map monotonically to PnL outcomes across asset classes |
+| **Tick-size microstructure** | ✅ Cleanly separates surviving from degraded trends across all dimensions |
+
+📎 Source: [arXiv:2607.01550 -- "Is Trend Still Your Friend?"](https://arxiv.org/abs/2607.01550)
+
+If a 200-year-old strategy can die from a structural change in how limit order books are populated, what other "timeless" anomalies are one regulatory tweak or technology shift away from extinction?
