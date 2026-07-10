@@ -1,0 +1,92 @@
+---
+title: "Sampling Ceilings"
+category: "daily-tech"
+order: 1
+date: "2026-07-10"
+tags: ["llm", "reasoning", "test-time-scaling", "sampling", "inference"]
+description: "A surprising discovery: more sampling in LLM reasoning systems can hurt accuracy, not help it."
+---
+
+**More samples don't always mean better answers—in fact, they can make things worse.**
+
+## What it is
+
+Reasoning systems like Claude and GPT use "test-time scaling" to solve hard problems: they sample multiple answers and pick the best one. The intuition is straightforward—draw more answers, and the chance of finding a correct one somewhere increases. This is called **coverage**, and it climbs steadily across orders of magnitude of sampling.
+
+But a deployed system must return **one answer**, and without knowing which sample is correct, it can only **select** by frequency or a learned score. The June 2026 paper "When More Sampling Hurts" from Yong Yi Bay and Kathleen A. Yearick (UIUC) shows that selection hits a ceiling surprisingly early. Beyond that point, extra samples only make the model more confident in a wrong answer, while burning compute.
+
+## Why it matters
+
+The paper introduces two key concepts:
+
+- **Modal ceiling**: For picking an answer by voting (self-consistency), the vote settles within a few dozen draws. Extra samples don't change the outcome—they just add cost.
+
+- **Correlation ceiling**: For benchmark scoring, the cutoff is even earlier. Beyond it, more draws add nothing and can even degrade accuracy.
+
+The bottleneck isn't **generating** a correct answer—it's **recognizing** one. The gap between climbing coverage and stalled selection is called the **identifiability gap**: the answer the model can produce but cannot pick.
+
+This flips the default assumption in reasoning systems. The real question isn't whether to sample—it's **how far**, and the answer is: **not far**.
+
+## Quick insight
+
+The paper derives a single metric from any sampling run: the **effective number of samples** n_eff, computed from intraclass correlation:
+
+```
+n_eff = n / (1 + (n-1) * rho)
+```
+
+where rho is the correlation between samples on the same problem. When samples are highly correlated (common in reasoning tasks), n_eff stays small even as n grows large. The model isn't exploring new solution paths—it's echoing the same mistake with more confidence.
+
+**Code sketch** — estimating effective samples from a pass/fail log:
+
+```python
+import numpy as np
+
+def effective_samples(results):
+    """
+    results: list of (problem_id, success_bool) across all samples
+    Returns n_eff estimate via intraclass correlation.
+    """
+    # Group by problem
+    by_problem = {}
+    for pid, success in results:
+        by_problem.setdefault(pid, []).append(success)
+    
+    # Compute within-problem variance
+    all_rates = [np.mean(s) for s in by_problem.values()]
+    overall_rate = np.mean(all_rates)
+    
+    # Between-problem variance
+    var_between = np.var(all_rates, ddof=1)
+    # Within-problem variance
+    var_within = np.mean([np.var(s, ddof=1) for s in by_problem.values()])
+    
+    # Intraclass correlation
+    rho = var_between / (var_between + var_within)
+    n = len(results) / len(by_problem)  # avg samples per problem
+    
+    n_eff = n / (1 + (n - 1) * rho)
+    return n_eff, rho
+```
+
+The metric is self-revealing: any sampling run already tells you where the ceiling is.
+
+## Practical implications
+
+- **Stop oversampling**: If your best-of-n or self-consistency pipeline is drawing hundreds of samples, you're likely past the modal ceiling—cutting n to 20-50 may match accuracy at a fraction of the cost.
+
+- **Benchmarks mislead**: pass@k (coverage) climbs with k, but deployed systems don't get to see all k attempts. The correlation ceiling is the more honest metric.
+
+- **Verification matters**: The bottleneck is recognizing correct answers, not generating them. Better verifiers or learned selectors lift the ceiling more than more sampling.
+
+- **Correlated failures hurt**: When a model makes a systematic reasoning error, repeated samples reinforce it instead of exploring alternatives. Diversity in sampling strategies matters more than raw count.
+
+## Source
+
+Paper: [When More Sampling Hurts: The Modal Ceiling and Correlation Ceiling of Test-Time Scaling](https://arxiv.org/abs/2606.28661)
+
+Code and data: [github.com/bay-yearick-lab/sampling-ceilings](https://github.com/bay-yearick-lab/sampling-ceilings)
+
+---
+
+The takeaway: test-time scaling has hard limits. More compute at inference doesn't automatically translate to better decisions—and sometimes it makes them worse.
