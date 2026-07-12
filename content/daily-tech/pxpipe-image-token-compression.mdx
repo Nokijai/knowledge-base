@@ -1,0 +1,66 @@
+---
+title: "pxpipe: Cut LLM Token Costs by 70% with PNG Image Compression"
+category: "daily-tech"
+order: 1
+date: "2026-07-12"
+tags: ["llm", "token-optimization", "pricing-hack", "vision-models", "cost-reduction"]
+description: "A local proxy that exploits the pricing gap between image and text tokens, rendering bulky context as PNGs to slash Claude Code bills by 59–70%."
+---
+
+**An image's token cost is fixed by its pixel dimensions, not by how much text it contains — and that's the pricing loophole pxpipe systematically exploits.**
+
+## What it is
+
+pxpipe is a local proxy (MIT licensed, TypeScript) that intercepts requests to Claude Code and Anthropic's Fable 5, rendering the bulkiest parts — system prompts, tool documentation, and older chat history — into dense PNG images before they ever leave your machine. The trick works because Anthropic bills image tokens by pixel area (fixed cost) while text costs roughly one token per character (variable cost). Dense content like code, JSON, and tool output packs about **3.1 characters per image-token** versus **1 character per text-token** in real Claude Code traffic.
+
+A 1928×1928 image costs approximately 4,761 vision tokens and can hold roughly **92,000 characters** of rendered text. That same content as plain text would consume ~25,000 tokens. The result: **59–70% lower end-to-end bills** on token-heavy workloads.
+
+## Why it matters / How it's used
+
+This is not a gimmick — it's a legitimate cost-reduction technique that exploits a documented pricing asymmetry. Heavy users of Claude Code or Fable 5 (the model with a near-100% vision reader) can cut monthly bills by 2-3x with a two-line install:
+
+```shell
+npx pxpipe-proxy                                  # start proxy on 127.0.0.1:47821
+ANTHROPIC_BASE_URL=http://127.0.0.1:47821 claude  # point Claude Code at it
+```
+
+The proxy is surgical about what it compresses: large tool results (>6k chars), collapsed older history, and static system prompts get rendered; recent messages and model outputs stay as text for accuracy. It logs every request to `~/.pxpipe/events.jsonl` with both the compressed cost and a free `count_tokens` counterfactual, so you can verify savings on your own workload.
+
+One documented session dropped from **$42.21** to **$6.06** on identical tasks — a 86% reduction. On SWE-bench Lite, the proxy resolved 10/10 tasks with and without compression, cutting request size by 65%.
+
+## Quick insight: the math that makes this work
+
+The core insight is that **context window growth in characters** has outpaced token growth because of this density gap. Every vendor's text-based context window tops out near ~4M chars (a 1M-token window at ~4 chars/token). But the same Fable 5 1M-token window read through pxpipe images holds a measured **~18M chars** — **4.6×** the text ceiling.
+
+**Compression profitability gate:**
+
+pxpipe doesn't blindly render everything. It applies a calibrated threshold based on real production traffic (N=391 sessions). Dense code/JSON (high chars/token) gets imaged; sparse prose (~3.5 chars/token, like narrative text) would *lose* money as an image and stays as text.
+
+**Key tradeoff — it's lossy:**
+
+The approach has a real limitation: exact string recall from images is unreliable. In testing, Fable 5 correctly recalled 12-character hex strings from images **13 out of 15 times**, with silent confabulation as the failure mode. Opus 4.8 scored **0/15**. This makes it unsuitable for workflows involving hash matching, UUID comparisons, or cryptographic strings that must be reproduced verbatim.
+
+**Benchmark results (reproducible):**
+
+| Test | N | Text baseline | pxpipe (image) | Token change |
+|:-----|:--|:--------------|:---------------|:-------------|
+| New arithmetic, Fable 5 | 100 | 100% | **100%** | **-38%** |
+| Fable 5 recall test | 98/arm | 98/98 | **98/98** | - |
+| Silent confabulation (lower = better) | 16/arm | 0/16 | **0/16** | - |
+| 12-char hex verbatim, Fable 5 | 15 | - | **13/15** | - |
+| 12-char hex verbatim, Opus 4.8 | 15 | 15/15 | **0/15** | -38% |
+
+On SWE-bench Pro: 14/19 (proxy ON) vs 15/19 (proxy OFF), request volume -60%.
+
+**Why Fable 5 specifically:**
+
+Fable 5's vision encoder is substantially stronger than earlier generations. Its near-100% accuracy reading dense rendered text is what makes pxpipe viable as a default. Opus 4.7/4.8 have higher error rates, and the calculus changes. The proxy defaults to Fable 5 only; Opus and other models are opt-in via `PXPIPE_MODELS=claude-opus-4-8` or the dashboard at `http://127.0.0.1:47821/`.
+
+## 📎 Source
+
+- GitHub repo: [https://github.com/teamchong/pxpipe](https://github.com/teamchong/pxpipe)
+- Article: [https://the-decoder.com/open-source-tool-pxpipe-hides-text-in-pngs-to-cut-claude-code-and-fable-5-token-costs-up-to-70](https://the-decoder.com/open-source-tool-pxpipe-hides-text-in-pngs-to-cut-claude-code-and-fable-5-token-costs-up-to-70)
+
+---
+
+If this pricing hack catches on broadly, Anthropic and other LLM providers could respond by raising image processing prices to close the loophole — making this a potentially time-limited window of opportunity for heavy users.
