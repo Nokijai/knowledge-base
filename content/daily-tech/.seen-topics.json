@@ -13,5 +13,6 @@
   "looped-transformers-latent-reasoning",
   "salt-z3-verified-systems-lang",
   "sampling-ceilings",
-  "pxpipe-image-token-compression"
+  "pxpipe-image-token-compression",
+  "spectrally-deconfounded-gradient-boosting"
 ]
