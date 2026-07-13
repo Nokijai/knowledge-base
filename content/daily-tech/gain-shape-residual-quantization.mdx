@@ -1,0 +1,33 @@
+---
+title: "Gain-Shape Residual Quantization (GSRQ)"
+category: "daily-tech"
+order: 1
+date: "2026-07-13"
+tags: ["kv-cache", "quantization", "llm-inference", "icml-2026", "vector-quantization"]
+description: "A drop-in replacement for K-means that decouples magnitude from direction, enabling sub-1-bit KV cache compression without the centroid shrinkage that cripples standard quantization."
+---
+
+Standard K-means has a quiet failure mode in high dimensions: when you average vectors together, the centroid shrinks toward the origin, and directional information gets washed out. For LLM KV cache quantization, this is a disaster — you lose the fine-grained angular structure that attention heads depend on. GSRQ fixes this with an elegantly simple insight: separate the **gain** (magnitude) from the **shape** (direction), and optimize them independently.
+
+**What it is:** GSRQ (Gain-Shape Residual Quantization) is a new quantization framework from ICML 2026 that reparameterizes K-means centroids as $\\mu_k = g_k s_k$, where $g_k \\geq 0$ is a scalar gain and $\\|s_k\\|_2 = 1$ is a unit-norm shape vector. Instead of averaging raw vectors (which shrinks centroids), it normalizes each vector to unit length before updating the shape, then projects the original vectors onto the shape to compute the gain. This decoupling means directional fidelity is preserved even at extremely low bit rates. The authors build this into a residual quantization pipeline (GSRQ) that pushes KV cache compression down to **0.375 bits per element** — well below the 1-bit barrier that previous methods couldn't cross without collapsing.
+
+**Why it matters:** KV cache memory is the single biggest cost in long-context LLM inference. At 128K context on LLaMA-3-8B, the KV cache eats ~128 GB — more than the model weights. Every optimization in production stacks (paged attention, prefix caching, GQA) helps, but quantization is the only lever that directly shrinks the cache size. GSRQ's breakthrough is that it works where standard VQ methods fail: at 1 bit, it jumps LongBench accuracy from 11.34 (VQLLM) to 33.54 — a **22.2 percentage point gain**. At 0.75 bits, it still achieves 29.72, while previous methods completely collapse. This means models can serve longer contexts on fewer GPUs, directly cutting inference cost by 2–4×.
+
+**Quick insight:** The core geometry problem is subtle but intuitive. In high dimensions, Euclidean centroid averaging creates a tension: a centroid that minimizes $\\ell_2$ distance to its members doesn't necessarily point in the same direction as any of them. GSKM fixes this by normalizing vectors before averaging direction, then recovering magnitude separately:
+
+```python
+# Standard K-means update (suffers centroid shrinkage)
+centroid_k = mean(x_i for i in cluster_k)
+
+# GSKM shape update (direction only, magnitude decoupled)
+y_i = x_i / norm(x_i)                          # normalize to unit sphere
+s_k = mean(y_i for i in cluster_k)             # average directions
+s_k = s_k / norm(s_k)                          # re-normalize to unit norm
+g_k = max(0, mean(dot(x_i, s_k) for i in cluster_k))  # recover magnitude
+```
+
+The result: shapes stay on the unit sphere, gains stay positive, and centroids represent both direction and magnitude faithfully — even with tiny codebooks (K=256) that standard K-means can't make useful.
+
+**📎 Source:** [GSRQ: Gain-Shape Residual Quantization for Sub-1-bit KV Cache](https://arxiv.org/abs/2607.01065) (ICML 2026)
+
+What if every clustering algorithm in your stack silently wastes bits because of a geometric artifact you never thought to question?

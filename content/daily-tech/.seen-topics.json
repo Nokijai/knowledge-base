@@ -14,5 +14,6 @@
   "salt-z3-verified-systems-lang",
   "sampling-ceilings",
   "pxpipe-image-token-compression",
-  "spectrally-deconfounded-gradient-boosting"
+  "spectrally-deconfounded-gradient-boosting",
+  "gain-shape-residual-quantization"
 ]
