@@ -1,0 +1,68 @@
+---
+title: "Manifold Hedging: Why the Geometry of Your Factor Loadings Is a First-Order Risk"
+category: "daily-finance"
+order: 1
+date: "2026-07-14"
+tags: ["portfolio-theory", "information-geometry", "causal-factors", "intertemporal-hedging", "manifold-rotation"]
+description: "When assets are conditionally independent given causal drivers, the optimal portfolio must hedge not just returns but the rotation of the factor-loading manifold itself — a first-order effect that standard Merton misses."
+---
+
+**Your factor loadings are not fixed — they rotate, and that rotation is an unhedgeable, first-order risk that most portfolio models pretend doesn't exist.**
+
+## What It Is
+
+In a causal factor model, you identify a minimal set of observable drivers $Z_t$ such that, conditional on them, all $n$ assets become mutually independent. The loading matrix $B(z,t)$ maps driver shocks to asset returns. The key insight from Rodríguez Domínguez (2026): $B$ is not static — it depends on the state $Z_t$, and its motion has a **geometric structure**. The space of conditional return covariances traces a manifold in the Grassmannian, and this manifold both **rotates smoothly** and **jumps discretely** when the conditioning set changes.
+
+The optimal dynamic portfolio decomposes into two components:
+
+$$w^*_t = \underbrace{\frac{1}{R_t} M_C(\mu - r_f\mathbf{1})}_{\text{myopic tangent fund}} + \underbrace{M_C B \Lambda_Z \psi_t}_{\text{manifold hedge}}$$
+
+where $M_C$ is the projector onto the constraint-compatible subspace, $\Lambda_Z$ is the driver innovation covariance, and $\psi_t$ encodes the predicted motion of the state. The **manifold hedge** is not a second-order refinement — it is a first-order effect, on par with the myopic allocation.
+
+## Why It Matters
+
+This result reframes intertemporal hedging in a way that's directly actionable:
+
+- **Dimension reduction:** The entire dynamic optimization lives in driver-space dimension $m$, not asset-space dimension $n$. A book of 3,200 assets with 5 drivers is solved as a 5-dimensional PDE. The $n$-dependence enters only through a one-time $O(n)$ projection. This is not approximation — it's exact.
+- **Unhedgeable geometry risk:** When the conditioning set changes (a "separator switch"), the resulting value jump is Kunita–Watanabe orthogonal to every continuously traded strategy. The market is **incomplete in the direction of its own geometry**. Pure rotations of $B$ (i.e., $B \mapsto BO$ for orthogonal $O$) are simultaneously undetectable (covariance is invariant), unhedgeable, and costly (~1.4% certainty-equivalent impact).
+- **Practical implication for multi-strategy desks:** If your factor loadings are state-dependent — and they almost certainly are — then a static Markowitz allocation on conditional moments is missing a hedge component that the paper shows delivers +2.0% certainty-equivalent gain (8.1 standard errors) in a moving-manifold economy.
+
+## Quick Insight: The Transport Connection
+
+The manifold hedge has a clean geometric interpretation via the **transport connection** on the information manifold:
+
+$$\widetilde{\omega}_t = E_t^\top G_t \dot{E}_t + \frac{1}{2}E_t^\top \dot{G}_t E_t$$
+
+where $G(z) = B(z)^\top \Sigma_{\text{ret}}(z)^{-1}B(z)$ is the pullback metric. The first term captures **horizontal transport** (rotation of the factor basis), and the second captures **vertical transport** (breathing of the metric itself). When $B$ is constant, both vanish and you recover classical Merton. When $B$ moves, the horizontal term is the novel hedge — it's what standard intertemporal models, which treat state-dependence as exogenous, completely miss.
+
+**Numerical result:** In the paper's synthetic economies, the $m$-dimensional backward recursion reproduces the full solver's Riccati trajectory to floating-point round-off ($\max|\Delta P| = 6.7 \times 10^{-15}$), and computation time is flat as $n$ scales from 10 to 3,200.
+
+```python
+# Sketch: projected Markowitz with manifold hedge
+# B: loading matrix (n x m), Sigma_Z: driver cov (m x m)
+# psi: predicted state motion (m,), mu: expected returns (n,)
+# R: risk aversion scalar
+
+import numpy as np
+
+def causal_portfolio(B, Sigma_Z, psi, mu, rf, R, varsigma_sq):
+    """Optimal policy: myopic + manifold hedge."""
+    Lambda_Z = Sigma_Z  # driver innovation covariance
+    Q = B @ Lambda_Z @ B.T + np.diag(varsigma_sq)  # conditional return cov
+    M_C = np.linalg.solve(Q, B @ Lambda_Z @ B.T) / np.trace(
+        np.linalg.solve(Q, B @ Lambda_Z @ B.T)
+    )  # simplified projector
+    # Myopic component
+    w_myopic = (1/R) * np.linalg.solve(Q, mu - rf)
+    # Manifold hedge component
+    w_hedge = (1/R) * np.linalg.solve(Q, B @ Lambda_Z @ psi)
+    return w_myopic, w_hedge
+```
+
+## 📎 Source
+
+Rodríguez Domínguez, A. (2026). "Dynamic Causal Portfolio Choice: Hedging the Rotation of the Common-Driver Manifold." arXiv:2607.06702. [https://arxiv.org/abs/2607.06702](https://arxiv.org/abs/2607.06702)
+
+---
+
+If your factor loadings rotate and you're not hedging that rotation, you're not hedging — you're just hoping the geometry stays still. The question isn't whether the manifold moves; it's whether you can see it move before it costs you.
