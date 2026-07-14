@@ -8,5 +8,6 @@
   "liquidity-tail-risk-price-discovery",
   "tick-size-death-of-short-term-trend-following",
   "signature-based-volatility-model-identification",
-  "manifold-hedging-common-driver-rotation"
+  "manifold-hedging-common-driver-rotation",
+  "factor-mirage-causal-misspecification"
 ]
