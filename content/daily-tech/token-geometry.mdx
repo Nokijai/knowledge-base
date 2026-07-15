@@ -1,0 +1,39 @@
+---
+title: "Token Geometry"
+category: "daily-tech"
+order: 1
+date: "2026-07-15"
+tags: ["llm-training", "optimization", "memory-efficiency", "information-geometry"]
+description: "A mathematical framework revealing that embedding table optimization follows simple 1D rays, enabling a kilobyte-scale optimizer that matches Adam's performance."
+---
+
+Embedding tables and LM-heads have gradient geometry fundamentally different from dense weights — and exploiting this yields an optimizer that uses **kilobytes of VRAM instead of gigabytes** while matching or beating Adam.
+
+**What it is:** The paper "Token Geometry" (arXiv 2607.01455) shows that the interface between discrete tokens and continuous representations in transformers has a special structure. The Fisher information metric — the canonical geometry for cross-entropy loss — can be approximated analytically for embedding tables. This means we don't need Adam's momentum and variance-tracking machinery: a lightweight optimizer called **Ember** suffices.
+
+**Why it matters:** Adam stores two optimizer state tensors per parameter (first and second moments). For a vocabulary of 100K tokens with 4096-dimensional embeddings, that's ~3.2GB of optimizer state just for the embedding table. Ember reduces this to O(V + D) — typically a few kilobytes — by exploiting the analytical structure of the Fisher metric. No more sharding optimizer states across GPUs for embedding tables.
+
+**Quick insight:** The key finding: embedding optimization trajectories are surprisingly simple. Instead of navigating a complex non-convex landscape, token embeddings move along nearly straight 1D rays.
+
+The Fisher metric for cross-entropy over a vocabulary with probabilities p_i has entries:
+
+    F_ij = Cov[nabla_theta log p_i, nabla_theta log p_j]
+
+For the embedding table, this structure simplifies dramatically because each token's gradient is sparse (only non-zero for tokens appearing in the batch). Ember exploits this by tracking just a running estimate of token frequencies, not per-parameter momentum.
+
+
+
+The paper proves this works because the Fisher metric for the embedding table factorizes: it's block-diagonal with each block determined by token frequency. Natural gradient descent with this approximate Fisher recovers the exact second-order correction for cross-entropy, while being computationally trivial.
+
+**Where this helps:**
+
+- **Large-vocabulary models** (100K+ tokens): embedding tables dominate memory
+- **Distributed training**: no need to shard optimizer state across ranks
+- **Fine-tuning**: Ember matches Adam in low-batch sparse-gradient regimes
+- **RLHF/PPO**: same performance, fraction of the optimizer memory
+
+The paper provides a distributed implementation that integrates cleanly with ZeRO/FSDP pipelines.
+
+**Source:** [arXiv:2607.01455 - Token Geometry](https://arxiv.org/abs/2607.01455) | [GitHub: ember](https://github.com/katop1234/ember)
+
+The next time you're debugging OOM errors during training and spot embedding.weight in the memory profile, remember: those 100K tokens might only need kilobytes of optimizer state, not gigabytes — if you exploit their geometry.

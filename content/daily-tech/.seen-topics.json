@@ -15,5 +15,6 @@
   "sampling-ceilings",
   "pxpipe-image-token-compression",
   "spectrally-deconfounded-gradient-boosting",
-  "gain-shape-residual-quantization"
+  "gain-shape-residual-quantization",
+  "token-geometry"
 ]
