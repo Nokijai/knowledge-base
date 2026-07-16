@@ -9,5 +9,6 @@
   "tick-size-death-of-short-term-trend-following",
   "signature-based-volatility-model-identification",
   "manifold-hedging-common-driver-rotation",
-  "factor-mirage-causal-misspecification"
+  "factor-mirage-causal-misspecification",
+  "compute-futures-asset-pricing"
 ]

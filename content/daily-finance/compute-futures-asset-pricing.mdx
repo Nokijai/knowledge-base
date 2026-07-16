@@ -1,0 +1,60 @@
+---
+title: "Compute Futures: Pricing a Non-Storable Asset Class"
+category: "daily-finance"
+order: 1
+date: "2026-07-16"
+tags: ["asset-pricing", "derivatives", "commodities", "AI-infrastructure", "market-microstructure"]
+description: "GPU compute futures are launching, but standard storage-based arbitrage fails — here's how to price an asset you can't store."
+---
+
+**Compute is becoming a tradeable commodity, but it breaks every rule in the commodity pricing playbook.**
+
+On May 12, 2026, CME Group and ICE both announced GPU compute futures contracts, pending regulatory approval. Larry Fink called it "a new asset class." But here's the problem: a GPU-hour you don't use today vanishes. You can't store compute like oil, warehouse it, and deliver it next month. This single fact — non-storability — breaks the entire cash-and-carry arbitrage machinery that underpins every other commodity futures market.
+
+## What It Is
+
+**Compute futures** are standardized derivatives contracts tied to GPU rental price indexes (e.g., Silicon Data's SDH100RT or Ornn's OCPI). They allow AI companies, cloud providers, and financial institutions to hedge GPU price volatility the same way airlines hedge jet fuel.
+
+The key insight from Bandi & Su (2026) is that **no-arbitrage links between spot and futures break** because compute is a non-storable service flow. The standard commodity pricing equation:
+
+$$F_t(T) = S_t \exp[(r_t + c_t - y_t)(T-t)]$$
+
+where $S_t$ is spot price, $r_t$ is the risk-free rate, $c_t$ is storage cost, and $y_t$ is convenience yield — this *cannot apply* to compute. There is no $c_t$ (you don't store GPUs) and no $y_t$ (you can't carry compute forward). A GPU-hour unused today is permanently lost.
+
+Instead, the pricing anchor becomes **synthetic futures derived from term rental contracts**:
+
+$$F_t^{\text{syn}}(T) = \frac{\partial}{\partial T}\left[(T-t)\Pi_t(t \rightarrow T)\right]$$
+
+where $\Pi_t(t \rightarrow T)$ is the fixed term rental rate for compute access over $[t, T]$. This synthetic price serves as an *upper bound* on true futures prices due to basis risk — futures reference an index, but physical rentals provide specific capacity. The "physical access wedge" creates systematic pricing differentials.
+
+## Why It Matters
+
+Compute is already **macroeconomically material**. Bandi & Su estimate that 2025-Q4 installed stock implies a gross compute service flow of **$430B to $1.3T annually** (1.4% to 4.0% of U.S. GDP). Planned 2026 capex by Amazon, Microsoft, Alphabet, and Meta exceeds $700B.
+
+For trading desks and risk managers, compute futures solve a real problem: GPU rental prices are wildly volatile and fragmented across providers (AWS, Azure, CoreWeave, Lambda), regions, and hardware generations (H100, B200). There's been no single reference price for "a GPU-hour" — Silicon Data and Ornn's benchmarks now provide that.
+
+**Hedging pressure**: Preliminary evidence shows a **positive compute risk premium** — long futures positions earn compensation for providing "insurance" to compute providers who need to lock in revenue. This mirrors the classic commodity hedging pressure story: producers (compute providers) are natural shorts, speculators require compensation to take the long side.
+
+## Quick Insight: The Hedging Pressure Mechanism
+
+The futures pricing equation becomes:
+
+$$F_t(T) = \mathbb{E}_t[S_T] - \lambda_t(T)$$
+
+where the risk premium $\lambda_t(T) = -\frac{\text{Cov}_t(M_{t,T}, S_T)}{M_{t,T}}$.
+
+**If compute providers dominate hedging (short positions)**, then compute spot prices $S_T$ covary negatively with the stochastic discount factor $M_{t,T}$ (when compute is expensive, the economy is AI-booming, marginal utility is low). This yields $\lambda > 0$ — a positive risk premium.
+
+**Empirical evidence**: Using synthetic futures from Silicon Data term structures, Bandi & Su find positive average returns across GPU generations (A100, H100, B200) and maturities (1-12 months), consistent with provider hedging pressure.
+
+**GPU generation dynamics**: Newer GPUs are cheaper per unit of compute. H100-equivalent rental price/hr: A100 ($4.54) > H100 ($2.51) > B200 ($2.02). But price volatility differs by generation — older hardware faces obsolescence risk, newer hardware faces supply constraints.
+
+## 📎 Source
+
+Bandi, F.M. & Su, Y. (2026). [(Early) AI Compute Asset Pricing](https://arxiv.org/abs/2607.12156). arXiv:2607.12156 [q-fin.PR].
+
+CME Group & Silicon Data announcement: [May 12, 2026 press release](https://www.cmegroup.com/media-room/press-releases/2026/5/12/cme_group_and_silicon_datapartnertolaunchfirstcomputefutures.html).
+
+---
+
+The creation of a futures market marks the moment a commodity transitions from bespoke input to standardized asset. Compute just crossed that threshold — but because you can't store it, the pricing logic is fundamentally different from oil, wheat, or copper. The first movers in this market will be those who understand not just GPU supply chains, but the mathematics of non-storable commodity risk.
