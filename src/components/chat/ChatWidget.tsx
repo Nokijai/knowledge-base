@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import { useChatStream } from "@/hooks/useChatStream";
 import ChatMessage from "./ChatMessage";
 
@@ -63,8 +64,19 @@ export default function ChatWidget({ mode: initialMode = "finance" }: ChatWidget
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
+  // Detect article page and extract slug for context injection
+  const pathname = usePathname();
+  const pageSlug = (() => {
+    const segments = pathname.split("/").filter(Boolean);
+    // Only treat as article slug if single segment and not a known route
+    if (segments.length === 1 && !["daily", "daily-finance"].includes(segments[0])) {
+      return segments[0];
+    }
+    return undefined;
+  })();
+
   const { messages, isStreaming, error, clearError, send, stop, clear } =
-    useChatStream({ mode: activeMode });
+    useChatStream({ mode: activeMode, pageSlug });
 
   const config = MODE_CONFIG[activeMode];
 
@@ -295,7 +307,9 @@ export default function ChatWidget({ mode: initialMode = "finance" }: ChatWidget
                     {config.welcomeTitle}
                   </p>
                   <p className="text-xs text-muted leading-relaxed">
-                    {config.welcomeBody}
+                    {pageSlug
+                      ? "I can see the current article — ask me anything about it."
+                      : config.welcomeBody}
                   </p>
                 </div>
 

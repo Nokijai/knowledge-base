@@ -52,6 +52,8 @@ export interface ProviderConfig {
 /** Body the client POSTs to /api/chat. */
 export interface ChatRequest {
   messages: ChatMessage[];
+  /** Optional slug of the article page the user is currently viewing. */
+  pageSlug?: string;
 }
 
 /** Individual SSE data payload. */

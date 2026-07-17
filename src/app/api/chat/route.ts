@@ -19,10 +19,12 @@ import {
   getProvider,
   FINANCE_SYSTEM_PROMPT,
   SWE_SYSTEM_PROMPT,
+  buildSystemPromptWithContext,
   type ChatMessage,
   type ChatRequest,
   type ChatStreamChunk,
 } from "@/lib/llm";
+import { getPostBySlug } from "@/lib/content";
 
 // ── Mode ────────────────────────────────────────────────────────
 
@@ -125,7 +127,7 @@ function validateBody(body: unknown): ChatRequest & { mode: ChatMode } {
     throw new ValidationError("Request body must be a JSON object.");
   }
 
-  const { messages, mode: rawMode } = body as Record<string, unknown>;
+  const { messages, mode: rawMode, pageSlug: rawPageSlug } = body as Record<string, unknown>;
 
   // Validate mode (optional, defaults to "finance")
   const mode: ChatMode =
@@ -134,6 +136,21 @@ function validateBody(body: unknown): ChatRequest & { mode: ChatMode } {
     throw new ValidationError(
       `Invalid mode "${String(rawMode)}". Allowed: ${[...VALID_MODES].join(", ")}`,
     );
+  }
+
+  // Validate pageSlug (optional string, alphanumeric + hyphens, max 100 chars)
+  let pageSlug: string | undefined;
+  if (rawPageSlug !== undefined) {
+    if (typeof rawPageSlug !== "string") {
+      throw new ValidationError("`pageSlug` must be a string.");
+    }
+    if (rawPageSlug.length > 100) {
+      throw new ValidationError("`pageSlug` must be 100 characters or fewer.");
+    }
+    if (!/^[a-zA-Z0-9-]+$/.test(rawPageSlug)) {
+      throw new ValidationError("`pageSlug` must contain only alphanumeric characters and hyphens.");
+    }
+    pageSlug = rawPageSlug;
   }
 
   if (!Array.isArray(messages) || messages.length === 0) {
@@ -181,7 +198,7 @@ function validateBody(body: unknown): ChatRequest & { mode: ChatMode } {
     );
   }
 
-  return { messages: validated, mode };
+  return { messages: validated, mode, pageSlug };
 }
 
 // ── SSE helpers ────────────────────────────────────────────────
@@ -234,8 +251,20 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
-  // Prepend system prompt based on mode
-  const systemPrompt = SYSTEM_PROMPTS[body.mode];
+  // Resolve system prompt — inject article context if user is on an article page
+  let systemPrompt = SYSTEM_PROMPTS[body.mode];
+  if (body.pageSlug) {
+    const post = getPostBySlug(body.pageSlug);
+    if (post) {
+      const contentSnippet =
+        post.content.length > 8000
+          ? post.content.slice(0, 8000) + "\n\n[...article truncated...]"
+          : post.content;
+      const contextBlock = `## Current Article: "${post.title}"\n\nThe user is currently reading this article. Use it as your primary reference when answering questions.\n\n---\n\n${contentSnippet}`;
+      systemPrompt = buildSystemPromptWithContext(SYSTEM_PROMPTS[body.mode], contextBlock);
+    }
+  }
+
   const messages: ChatMessage[] = [
     { role: "system", content: systemPrompt },
     ...body.messages,

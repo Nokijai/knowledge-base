@@ -14,11 +14,14 @@ interface UseChatStreamOptions {
   endpoint?: string;
   /** Chat mode – "finance" (default) | "swe" */
   mode?: "finance" | "swe";
+  /** Slug of the article currently being viewed, for page-context injection */
+  pageSlug?: string;
 }
 
 export function useChatStream(opts: UseChatStreamOptions = {}) {
   const endpoint = opts.endpoint ?? "/api/chat";
   const mode = opts.mode ?? "finance";
+  const pageSlug = opts.pageSlug;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +64,7 @@ export function useChatStream(opts: UseChatStreamOptions = {}) {
               role: m.role,
               content: m.content,
             })),
+            ...(pageSlug ? { pageSlug } : {}),
           }),
           signal: controller.signal,
         });
@@ -184,7 +188,7 @@ export function useChatStream(opts: UseChatStreamOptions = {}) {
         abortRef.current = null;
       }
     },
-    [endpoint, mode, messages, isStreaming],
+    [endpoint, mode, pageSlug, messages, isStreaming],
   );
 
   const stop = useCallback(() => {

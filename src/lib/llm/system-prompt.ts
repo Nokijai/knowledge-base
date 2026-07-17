@@ -30,3 +30,11 @@ Guidelines:
 8. For complex topics, break the explanation into digestible parts.
 
 Important: You do NOT have access to real-time market data, live prices, current news, or the user's portfolio. Clearly state this when asked about current prices or live market conditions.`;
+
+/**
+ * Prepend an article context block to a base system prompt.
+ * Used by the chat API route to inject the currently-viewed article.
+ */
+export function buildSystemPromptWithContext(basePrompt: string, context: string): string {
+  return `${context}\n\n${basePrompt}`;
+}
