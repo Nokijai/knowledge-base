@@ -1,0 +1,79 @@
+---
+title: "The Fourier-Residue Identity: Splitting Return Predictability into Sign vs. Magnitude"
+category: "daily-finance"
+order: 1
+date: "2026-07-18"
+tags: ["market microstructure", "return predictability", "autocorrelation", "variance-ratio", "statistical inference"]
+description: "A new spectral decomposition that separates return autocorrelation into independent sign and magnitude channels — revealing whether markets reverse direction or just shrink in size."
+---
+
+SPY's lag-1 autocorrelation is −0.081 with a z-score of −7.4 — one of the most statistically significant regularities in equity finance. Yet the standard variance-ratio test cannot tell you *why*: whether prices reverse direction, or whether large moves simply shrink. The Fourier-Residue Identity (FRI) solves this by decomposing autocorrelation into two independent, testable channels.
+
+## What it is
+
+The FRI, introduced by Victoria Portnaya (arXiv:2606.29591, June 2026), decomposes the return autocorrelation $\rho(m)$ into a **sign channel** (does the direction of today's return predict tomorrow's direction?) and a **magnitude channel** (does the size of today's return predict tomorrow's size?). The key insight: the standard autocorrelation function is a scalar that conflates both effects. The FRI uses the Fejér kernel to split them cleanly.
+
+The core identity (Proposition 2.5 in the paper):
+
+$$
+\gamma_{A,k}(m) = \frac{\mathbb{E}[|r_t|^k \cdot |r_{t-m}|^k] - \mu_k^2}{\sigma_k^2}
+$$
+
+where $k=2$ gives the sign channel (directional persistence) and $k=4$ gives the magnitude channel (size persistence). Neither is a function of the other — a series with sign momentum but no magnitude clustering has $\text{VR}_2(q) > 1$, $\text{VR}_4(q) \approx 1$, and vice versa.
+
+The paper also proves the **Fejér Identity** — that the classic Lo-MacKinlay variance-ratio test statistic is a spectral sum:
+
+$$
+\text{VR}(q) = 1 + 2\sum_{m=1}^{q-1} \left(1 - \frac{m}{q}\right) \rho(m)
+$$
+
+which gives the VR test a clean spectral interpretation: it tests whether the normalised power spectrum at zero frequency equals unity under Fejér smoothing.
+
+## Why it matters
+
+This is a practical tool for any quant trading desk. The FRI diagnosis has direct trading implications:
+
+- If the **sign channel** is significant → directional reversal strategies (mean reversion) or trend-following (momentum) may work
+- If only the **magnitude channel** is significant → volatility scaling, position sizing, and stop-loss logic matter more than direction prediction
+
+The key empirical finding: **SPY's lag-1 autocorrelation is driven entirely by magnitude** (p < 10⁻¹² for magnitude, p = 0.11 for sign). A large move yesterday predicts a smaller move today *regardless of direction* — the fingerprint of bid-ask bounce and non-synchronous constituent staleness, not directional reversal. At lag 3, a separate directional reversal channel appears (p = 0.02) that is *invisible* to the scalar autocorrelation test.
+
+The paper also provides a subsample diagnostic $R_N = G_{N/2} / G_N$ that tells practitioners whether a detected VR deviation is structural (persistent out-of-sample) or a finite-sample artefact.
+
+## Quick example
+
+Applied to SPY daily data (1993–2026):
+
+| Test | Statistic | p-value | Interpretation |
+|------|-----------|---------|----------------|
+| Full autocorrelation | $z = -7.39$ | $<10^{-12}$ | Something is happening |
+| FRI sign test | $z = -1.59$ | 0.11 | Direction is *not* predictable |
+| FRI magnitude test | $z = -6.84$ | $<10^{-12}$ | Size is highly predictable |
+
+A simple Python implementation:
+
+```python
+import numpy as np
+
+def fri_sign_test(returns, max_lag=1):
+    """FRI sign channel: test directional predictability alone."""
+    n = len(returns)
+    signs = np.sign(returns)
+    # Probability same-sign at lag m
+    p_same = np.mean(signs[:n-max_lag] == signs[max_lag:])
+    rho_sign = 2 * p_same - 1
+    # Asymptotic variance under H0
+    se = np.sqrt(1 / n)
+    z = rho_sign / se
+    return rho_sign, z, 2 * (1 - norm.cdf(abs(z)))
+```
+
+The cross-asset results are equally striking: mean reversion is confined to exchange-traded equities and sovereign bonds; credit ETFs, commodities, FX, and crypto are indistinguishable from random walks on this test.
+
+## 📎 Source
+
+Portnaya, V. (2026). *The Bounce Has No Direction: Sign, Magnitude, and the Microstructure of Equity Return Predictability*. arXiv:2606.29591 [q-fin.TR]. https://arxiv.org/abs/2606.29591
+
+---
+
+*The next time you see a significant autocorrelation in a backtest, ask yourself: is it direction or size? The FRI gives you a way to answer — and the answer may change your entire strategy design.*

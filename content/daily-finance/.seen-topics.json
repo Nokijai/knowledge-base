@@ -10,5 +10,6 @@
   "signature-based-volatility-model-identification",
   "manifold-hedging-common-driver-rotation",
   "factor-mirage-causal-misspecification",
-  "compute-futures-asset-pricing"
+  "compute-futures-asset-pricing",
+  "fourier-residue-identity"
 ]
