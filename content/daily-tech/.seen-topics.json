@@ -17,5 +17,6 @@
   "spectrally-deconfounded-gradient-boosting",
   "gain-shape-residual-quantization",
   "token-geometry",
-  "interleaved-noise-injection"
+  "interleaved-noise-injection",
+  "cross-model-speculative-decoding"
 ]
