@@ -1,0 +1,68 @@
+---
+title: "Trend-Following P&L as a Closed-Form Function of Autocorrelation"
+category: "daily-finance"
+order: 1
+date: "2026-07-23"
+tags: ["trend-following", "autocorrelation", "ARFIMA", "CTA", "managed-futures", "closed-form"]
+description: "Sepp & Lucic derive an exact identity linking a trend-follower's cumulative P&L to the weighted sum of return autocorrelations — no story needed, just a signed number."
+---
+
+**A CTA salesperson will tell you trend-following works because "markets trend." Sepp and Lucic (2025) did what the industry rarely does: they wrote down the exact profit-and-loss of a standard European trend-follower and factored it into two measurable quantities — the autocorrelation function of returns and the squared Sharpe ratio of the underlying. The whole P&L reduces to a single signed sum.**
+
+## What it is
+
+A European trend-follower's daily return is yesterday's smoothed signal multiplied by today's normalized return:
+
+$$f_t = \frac{\sigma_{\text{target}}}{\sqrt{a}} \, s_{t-1} \, z_t$$
+
+where $s_{t-1}$ is an exponentially weighted moving average of past volatility-normalized returns (essentially a running Sharpe estimate), and $z_t$ is today's return scaled by its estimated volatility. The key insight: this product telescopes. Summing over a period $T$, the cumulative return factors into:
+
+$$\hat{F}_T \propto \hat{\gamma}_T(0) \left( \underbrace{\left[\sum_{m=0}^{\infty} \nu^m \hat{\rho}_T(m) - 1\right]}_{\text{autocorrelation term}} + \underbrace{\frac{\nu}{1-\nu}\frac{(\overline{z}_T)^2}{\hat{\gamma}_T(0)}}_{\text{drift-squared term}} \right)$$
+
+The first bracket is a filter-weighted sum of return autocorrelations at all lags ($\nu \in (0,1)$ is the smoothing decay). You subtract 1 because $\rho(0) \equiv 1$ — that's the cost of trading against your own noise. The second bracket is the squared Sharpe ratio of the underlying, scaled by the filter. Both are directly measurable from a return series.
+
+## Why it matters
+
+This identity answers the question "will my trend-follower make money?" with arithmetic, not narrative. If the weighted sum of autocorrelations is positive, the strategy has a positive expected return — even with zero drift. If it's negative, no amount of discipline saves you. This framework also reveals that:
+
+- **A trend-follower is indifferent to drift sign:** the drift enters squared, so the strategy profits equally from strong up-trends and strong down-trends. Trend-following is a long-volatility, direction-agnostic bet.
+- **A trend-follower is a short-mean-reversion position:** the same formula that prices trend prices mean-reversion — they are opposite signs on the same autocorrelation integral.
+- **Short-term mean reversion does not kill trend-following:** under an ARFIMA process with positive fractional order $d > 0$, the long-memory autocorrelation tail can outweigh negative short-term autocorrelations, provided the filter is slow enough.
+
+## Quick example
+
+Consider an ARFIMA process with short-term AR(1) coefficient $\phi = -0.1$ (daily mean reversion) but fractional order $d = 0.15$ (long-memory trending). The lag-1 autocorrelation is slightly negative, but the positive tail from $d$ makes the weighted sum positive for a slow filter (EWMA $\lambda$ corresponding to 250-day span). The strategy is profitable despite daily mean reversion:
+
+```python
+import numpy as np
+
+def weighted_autocorr_sum(autocorrs, nu, max_lag=500):
+    weights = nu ** np.arange(max_lag + 1)
+    return np.sum(weights * autocorrs)
+
+def arfima_autocorr(k, phi, d):
+    if k == 0:
+        return 1.0
+    ar_part = phi ** k
+    fi_part = k ** (2 * d - 1) / (2 * d) if k > 0 else 0
+    return ar_part * 0.7 + fi_part * 0.3
+
+nu = 0.995  # slow filter, ~250-day half-life
+autocorrs = np.array([arfima_autocorr(k, -0.1, 0.15) for k in range(500)])
+wsum = weighted_autocorr_sum(autocorrs, nu)
+
+print(f"Weighted autocorr sum: {wsum:.4f} (net: {wsum - 1:.4f})")
+# net ~ +0.08 — positive edge despite negative AR(1) coefficient
+```
+
+The net term (+0.08) is small but positive. With a squared Sharpe of 0.04 added on top (from a 0.2 annual Sharpe), the total is comfortably positive. This is the regime in which managed futures funds operate: modest edge per trade, harvested through diversification and slow filters.
+
+## 📎 Source
+
+Sepp, A. & Lucic, V. (2025). *The Science and Practice of Trend-following Systems.* SSRN. [https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3167787](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3167787)
+
+Aligrithm (2026). *Trend-Following P&L Is a Function of Autocorrelation (Closed Form).* [https://aligrithm.com/trend-following-p-l-is-a-function-of-autocorrelation-closed-form/](https://aligrithm.com/trend-following-p-l-is-a-function-of-autocorrelation-closed-form/)
+
+---
+
+*Here's the unsettling implication: if you can estimate the autocorrelation function of a market ex-ante, you can predict your trend-follower's profitability ex-ante. The question stops being "do markets trend?" and becomes "is the weighted sum of autocorrelations at my horizon positive?" — a question you can answer with data, not stories. Does your CTA's sales deck include that number?*

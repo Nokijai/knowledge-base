@@ -11,5 +11,6 @@
   "manifold-hedging-common-driver-rotation",
   "factor-mirage-causal-misspecification",
   "compute-futures-asset-pricing",
-  "fourier-residue-identity"
+  "fourier-residue-identity",
+  "trend-following-autocorrelation-closed-form"
 ]
