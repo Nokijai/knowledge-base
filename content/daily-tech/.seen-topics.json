@@ -18,5 +18,6 @@
   "gain-shape-residual-quantization",
   "token-geometry",
   "interleaved-noise-injection",
-  "cross-model-speculative-decoding"
+  "cross-model-speculative-decoding",
+  "hallmark-anti-ai-slop"
 ]
