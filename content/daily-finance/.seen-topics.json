@@ -12,5 +12,6 @@
   "factor-mirage-causal-misspecification",
   "compute-futures-asset-pricing",
   "fourier-residue-identity",
-  "trend-following-autocorrelation-closed-form"
+  "trend-following-autocorrelation-closed-form",
+  "trading-tp2-option-violations"
 ]
