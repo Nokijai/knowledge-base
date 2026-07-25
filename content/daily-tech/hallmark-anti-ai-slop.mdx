@@ -1,0 +1,38 @@
+---
+title: "Hallmark — The Anti-AI-Slop Design Skill"
+category: "daily-tech"
+order: 1
+date: "2026-07-24"
+tags: ["ai-agents", "design", "ui", "open-source", "claude-code"]
+description: "An open-source design skill for Claude Code, Cursor, and Codex that runs 57 slop-test gates to make AI-generated UI stop looking like AI-generated UI."
+---
+
+Every AI coding tool produces the same generic, template-y UI — centred hero, gradient button, three-column feature grid, testimonials, footer. Hallmark is a design skill (MIT, by Together AI) that refuses to ship that output.
+
+**What it is:** Hallmark is a rule-set you install into Claude Code, Cursor, or Codex. When you ask it to build a page, it picks a macrostructure (not just "hero + features"), dresses it in one of twenty themes, runs **57 slop-test gates** plus a pre-emit self-critique before handing back any code. Two pages by Hallmark for different briefs look like different sites — not colour-swaps of the same template. It also ships `audit`, `redesign`, and `study` verbs to score existing code, rebuild structure from the ground up, or extract design DNA from a screenshot or URL.
+
+**Why it matters:** As AI coding agents produce more of the web's UI, "AI-slop" — the bland, templated, on-distribution output every LLM defaults to — becomes a real problem. Hallmark is a concrete, open-source answer: encode taste as enforceable rules. It enforces honest copy (no fabricated metrics), locked design tokens (no mid-render colour improvisation), a ban on re-drawn browser chrome, and mobile responsiveness at 320/375/414/768 px. It's the closest thing to a linting system for design quality in AI-generated code.
+
+**Quick insight — a flavour of the rules:**
+
+The slop-test gates include gems like:
+
+> **Gate 46:** "Does the page contain invented metrics, testimonials, or case-study counts?" (Must be **no** — use real numbers or a placeholder grey block saying "metric to confirm".)
+
+> **Gate 57:** "Does the page re-draw browser chrome (URL pill, traffic-light dots, fake phone frames)?" (Must be **no** — the user's environment already supplies real chrome.)
+
+And the pre-emit critique scores output 1–5 on six axes: **Philosophy, Hierarchy, Execution, Specificity, Restraint, Variety**. Anything < 3 triggers a revision pass. The scores are stamped into the CSS comment of every artifact:
+
+```css
+/* Hallmark · pre-emit critique: P5 H4 E5 S4 R5 V5 */
+```
+
+Install it in one line:
+
+```bash
+npx skills add nutlope/hallmark
+```
+
+**📎 Source:** [github.com/Nutlope/hallmark](https://github.com/Nutlope/hallmark) — 15K+ stars, MIT license, made by Together AI.
+
+The hardest problem in AI-generated design isn't generating more — it's knowing when *not* to ship what comes out first. Hallmark gives your agent that instinct.
