@@ -1,0 +1,41 @@
+---
+title: "PixelRAG — When RAG Stops Reading and Starts Looking"
+category: "daily-tech"
+order: 1
+date: "2026-07-26"
+tags: ["RAG", "multimodal", "retrieval", "computer-vision", "berkeley", "arxiv"]
+description: "PixelRAG replaces text parsing in RAG with screenshot-based retrieval — searching documents by how they look, not just what they say."
+---
+
+What if the best way to retrieve information from a webpage wasn't to parse its HTML, but to *screenshot it* and search the image? That's the bet PixelRAG makes — and it's winning.
+
+**What it is:** PixelRAG is a retrieval-augmented generation system from Berkeley SkyLab, BAIR, and the Berkeley NLP Group that throws out text parsing entirely. Instead of chunking HTML or extracting text, it renders webpages and PDFs into screenshot tiles, embeds those tiles into a vector space using a fine-tuned vision-language model (Qwen3-VL-Embedding with LoRA), and retrieves by visual similarity. A VLM then reads the retrieved screenshots directly — no intermediate text conversion. The result is a system that indexes 28.1 million screenshot tiles across 8.28 million Wikipedia articles, all searchable by how they *look*.
+
+**Why it matters:** Traditional text-based RAG is lossy — it discards layout, tables, charts, infographics, font hierarchies, and any visual structure that HTML parsing can't linearize. PixelRAG keeps all of that intact. On text-centric benchmarks like Natural Questions and SimpleQA, it *still* outperforms text-based RAG (because layout carries semantic signal). On multimodal and agentic benchmarks (MMSearch, MoNaCo), it beats text baselines by up to 18.1% in accuracy. It also introduces a new efficiency lever: image compression gives up to 3x token cost reduction at lower resolutions with minimal accuracy loss.
+
+**Quick example:** Searching a Wikipedia page about the Python programming language. Text-based RAG would chunk paragraphs and lose the syntax-highlighted code block's formatting. PixelRAG takes a screenshot tile of the code section — the indentation, color highlighting, and surrounding commentary all stay intact. The VLM reads it as an image and can answer questions about the code structure that would be ambiguous from text alone.
+
+```python
+# Install and search in two commands
+pip install pixelrag
+curl -X POST https://api.pixelrag.ai/search \
+  -H "Content-Type: application/json" \
+  -d '{"queries": [{"text": "What does the Python logo look like?"}], "n_docs": 1}'
+```
+
+You can also build your own index from local PDFs with a single YAML config:
+
+```yaml
+# pixelrag.yaml
+source:
+  type: local
+  path: ./my_docs
+embed:
+  model: Qwen/Qwen3-VL-Embedding-2B
+  device: auto
+output: ./my_index
+```
+
+**📎 Source:** [PixelRAG: Web Screenshots Beat Text for Retrieval-Augmented Generation](https://arxiv.org/abs/2606.28344) | [GitHub (7,200+ ⭐)](https://github.com/StarTrail-org/PixelRAG) | [Live demo](https://pixelrag.ai/)
+
+*If the web is natively visual, why have we been forcing it through a text funnel? PixelRAG suggests the answer might be "we shouldn't have" — and opens the door to a generation of retrieval systems that see as well as they read.*

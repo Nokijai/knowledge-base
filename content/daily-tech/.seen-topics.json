@@ -19,5 +19,6 @@
   "token-geometry",
   "interleaved-noise-injection",
   "cross-model-speculative-decoding",
-  "hallmark-anti-ai-slop"
+  "hallmark-anti-ai-slop",
+  "pixelrag"
 ]
