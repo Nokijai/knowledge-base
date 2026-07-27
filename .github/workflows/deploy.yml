@@ -46,7 +46,7 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -t ed25519 ${{ secrets.DO_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
-      - name: Deploy to DigitalOcean
+      - name: Deploy to Tencent Cloud
         env:
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
@@ -76,10 +76,10 @@ jobs:
             --name knowledge-base \
             --restart unless-stopped \
             -p 3001:3000 \
-            -v /home/noki/knowledge-base/content:/app/content:ro \
+            -v /apps/knowledge-base/content:/app/content:ro \
             -e LLM_PROVIDER=openai \
-            -e LLM_MODEL=deepseek-v3 \
-            -e OPENAI_BASE_URL=https://api.silra.cn/v1 \
+            -e LLM_MODEL=glm-5.2 \
+            -e OPENAI_BASE_URL=https://yuanyuaicloud.cn/v1 \
             -e LLM_API_KEY="$LLM_API_KEY" \
             -e SENTRY_DSN="$SENTRY_DSN_KB" \
             -e NEXT_PUBLIC_SENTRY_DSN="$SENTRY_DSN_KB" \
