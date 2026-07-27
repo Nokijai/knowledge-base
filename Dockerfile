@@ -1,14 +1,14 @@
 FROM node:22-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --ignore-scripts --legacy-peer-deps
+RUN echo "legacy-peer-deps=true" > .npmrc && npm ci
 
 FROM node:22-slim AS builder
 WORKDIR /app
 ENV NODE_OPTIONS="--max-old-space-size=1024"
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN ./node_modules/.bin/next build
+RUN npx next build
 
 FROM node:22-slim AS runner
 WORKDIR /app
