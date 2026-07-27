@@ -54,12 +54,27 @@ export default function Sidebar() {
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 border-r border-border bg-surface/50 backdrop-blur-sm flex flex-col z-30 max-lg:hidden">
       <div className="p-5 border-b border-border">
-        <Link href="/" className="flex items-center gap-2 group">
-          <span className="text-lg font-bold text-foreground group-hover:text-accent transition-colors">
-            KB
-          </span>
-          <span className="text-sm text-muted">/ noki</span>
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 group">
+            <span className="text-lg font-bold text-foreground group-hover:text-accent transition-colors">
+              KB
+            </span>
+            <span className="text-sm text-muted">/ noki</span>
+          </Link>
+          <button
+            onClick={() => {
+              // Dispatch Cmd+K to open global SearchModal
+              document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }));
+            }}
+            className="p-1.5 rounded-md text-muted hover:text-foreground hover:bg-border/40 transition-all"
+            aria-label="Search"
+            title="Search (Cmd+K)"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <nav className="flex-1 overflow-y-auto p-4 space-y-5">
