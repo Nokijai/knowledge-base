@@ -6,6 +6,10 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import Sidebar from "@/components/Sidebar";
 import MobileHeader from "@/components/MobileHeader";
+import ProgressBar from "@/components/article/ProgressBar";
+import Toc from "@/components/article/Toc";
+import CodeBlock from "@/components/article/CodeBlock";
+import { extractHeadings, getRelatedPosts } from "@/lib/article";
 import {
   getAllPosts,
   getPostBySlug,
@@ -22,6 +26,7 @@ import { SpreadChart, ZScoreChart } from "@/components/charts/SectorEtfCharts";
 export const dynamic = "force-dynamic";
 
 const mdxComponents = {
+  CodeBlock,
   NormalizedPriceChart,
   RatioChart,
   SpreadChart,
@@ -69,12 +74,17 @@ export default async function ArticlePage({
 
   const categoryLabel = CATEGORY_LABELS[post.category] || post.category;
 
+  const headings = extractHeadings(post.content);
+  const allPosts = getAllPosts();
+  const relatedPosts = getRelatedPosts(slug, allPosts);
+
   return (
     <>
+      <ProgressBar />
       <Sidebar />
       <MobileHeader categories={mobileCategories} />
       <main className="lg:ml-64 min-h-screen">
-        <div className="max-w-3xl mx-auto px-6 py-16 max-lg:pt-20">
+        <div className="max-w-3xl mx-auto px-6 py-16 max-lg:pt-20 lg:pr-8">
 
           {/* Breadcrumb */}
           <nav className="flex items-center gap-2 text-sm text-muted mb-8">
@@ -159,8 +169,41 @@ export default async function ArticlePage({
               )}
             </nav>
           )}
+
+          {/* Related posts */}
+          {relatedPosts.length > 0 && (
+            <section className="mt-12 pt-6 border-t border-border">
+              <h2 className="text-xs uppercase tracking-wider text-muted font-semibold mb-4">
+                Related articles
+              </h2>
+              <div className="space-y-2">
+                {relatedPosts.map((r) => (
+                  <Link key={r.slug} href={`/${r.slug}`} className="block group">
+                    <div className="flex items-start justify-between gap-3 px-3 py-2 rounded-lg hover:bg-surface/60 transition-all">
+                      <div className="min-w-0">
+                        <span className="text-sm font-medium text-foreground group-hover:text-accent transition-colors">
+                          {r.title}
+                        </span>
+                        <div className="flex gap-1.5 mt-1 flex-wrap">
+                          {r.sharedTags.slice(0, 3).map((t) => (
+                            <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-full bg-tag-bg text-tag-text">
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <span className="text-xs text-muted whitespace-nowrap shrink-0 mt-0.5">
+                        {r.readingTime} min
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </main>
+      <Toc headings={headings} />
     </>
   );
 }
