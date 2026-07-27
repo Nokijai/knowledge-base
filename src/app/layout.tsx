@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import ChatWidget from "@/components/chat/ChatWidget";
+import SearchModal from "@/components/search/SearchModal";
+import { getAllPosts } from "@/lib/content";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -24,10 +26,13 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const posts = getAllPosts();
+
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="antialiased">
         {children}
+        <SearchModal posts={posts} />
         <ChatWidget />
       </body>
     </html>

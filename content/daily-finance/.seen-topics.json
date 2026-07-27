@@ -1,17 +1,17 @@
 [
-  "square-root-law-market-impact",
-  "epps-effect-correlation-market-microstructure",
-  "loss-versus-rebalancing-lvr",
-  "unified-theory-order-flow-market-impact-volatility",
-  "prediction-market-option-pricing-wedge",
   "ai-premium-factor",
-  "liquidity-tail-risk-price-discovery",
-  "tick-size-death-of-short-term-trend-following",
-  "signature-based-volatility-model-identification",
-  "manifold-hedging-common-driver-rotation",
-  "factor-mirage-causal-misspecification",
   "compute-futures-asset-pricing",
+  "epps-effect-correlation-market-microstructure",
+  "factor-mirage-causal-misspecification",
   "fourier-residue-identity",
+  "liquidity-tail-risk-price-discovery",
+  "loss-versus-rebalancing-lvr",
+  "manifold-hedging-common-driver-rotation",
+  "prediction-market-option-pricing-wedge",
+  "signature-based-volatility-model-identification",
+  "square-root-law-market-impact",
+  "tick-size-death-of-short-term-trend-following",
+  "trading-tp2-option-violations",
   "trend-following-autocorrelation-closed-form",
-  "trading-tp2-option-violations"
+  "unified-theory-order-flow-market-impact-volatility"
 ]
