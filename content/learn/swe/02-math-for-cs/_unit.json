@@ -1,0 +1,10 @@
+{
+  "title": "Math for Computer Science",
+  "slug": "02-math-for-cs",
+  "order": 2,
+  "description": "離散數學、邏輯、組合數學、圖論 — CS 必備數學工具。",
+  "lessons": [
+    "01-discrete-mathematics",
+    "02-linear-algebra-basics"
+  ]
+}

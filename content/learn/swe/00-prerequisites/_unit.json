@@ -1,0 +1,10 @@
+{
+  "title": "Prerequisites",
+  "slug": "00-prerequisites",
+  "order": 0,
+  "description": "計算機科學基礎入門 — 適合零基礎開始。",
+  "lessons": [
+    "01-what-is-computer-science",
+    "02-python-basics"
+  ]
+}

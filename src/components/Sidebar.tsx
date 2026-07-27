@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getCategories, getDailyTechPosts, getDailyFinancePosts } from '@/lib/content';
+import { getTracks } from '@/lib/learn';
 import SearchButton from '@/components/search/SearchButton';
 
 const categoryIcons: Record<string, string> = {
@@ -12,6 +13,7 @@ export default function Sidebar() {
   const categories = getCategories();
   const dailyTechPosts = getDailyTechPosts();
   const dailyFinancePosts = getDailyFinancePosts();
+  const tracks = getTracks();
   const recentTech = dailyTechPosts.slice(0, 5);
   const recentFinance = dailyFinancePosts.slice(0, 5);
 
@@ -94,6 +96,32 @@ export default function Sidebar() {
             ? <DailyList posts={recentFinance} href="/daily-finance" />
             : <p className="text-xs text-muted px-3">Coming Tuesday</p>
           }
+        </div>
+
+        {/* Learn */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-xs uppercase tracking-wider text-muted font-semibold flex items-center gap-1.5">
+              <span>📖</span> Learn
+            </h3>
+          </div>
+          <div className="space-y-0.5">
+            {tracks.map((track) => (
+              <Link
+                key={track.slug}
+                href={`/learn/${track.slug}`}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-border/40 transition-all group"
+              >
+                <span className="text-sm">{track.slug === 'swe' ? '◈' : '◆'}</span>
+                <span className="text-sm text-muted group-hover:text-foreground transition-colors truncate flex-1">
+                  {track.title}
+                </span>
+                <span className="text-xs text-muted/60 shrink-0">
+                  {track.units.reduce((s, u) => s + u.lessons.length, 0)}
+                </span>
+              </Link>
+            ))}
+          </div>
         </div>
 
         {/* Other categories */}

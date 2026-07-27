@@ -1,0 +1,134 @@
+---
+title: "Probability Fundamentals"
+description: "機率論核心概念 — 條件機率、貝氏定理、隨機變數、常見分布"
+difficulty: "beginner"
+order: 1
+tags: ["probability", "statistics", "math", "quant-basics"]
+prerequisites: ["numpy-pandas-crash-course"]
+date: 2026-07-27
+---
+
+## 為什麼 Quant 需要機率論？
+
+金融市場充滿不確定性。**機率論是量化金融的語言**——從期權定價到風險管理，底層全是機率。
+
+> "If you want to be a quant, probability is not optional. It's the foundation of everything." — Peter Carr (NYU)
+
+## 核心概念
+
+### 樣本空間與事件
+
+```python
+# 擲骰子的樣本空間
+sample_space = {1, 2, 3, 4, 5, 6}
+
+# 事件 A: 擲出偶數
+event_a = {2, 4, 6}
+p_a = len(event_a) / len(sample_space)  # 0.5
+
+# 事件 B: 擲出大於 3
+event_b = {4, 5, 6}
+p_b = len(event_b) / len(sample_space)  # 0.5
+```
+
+### 條件機率
+
+$$P(A|B) = \frac{P(A \cap B)}{P(B)}$$
+
+給定 B 已經發生，A 發生的機率。
+
+```python
+# P(A|B): 已知擲出大於 3，是偶數的機率
+p_a_and_b = len(event_a & event_b) / len(sample_space)  # 2/6
+p_a_given_b = p_a_and_b / p_b  # (2/6) / (3/6) = 2/3
+print(f"P(A|B) = {p_a_given_b}")  # 0.667
+```
+
+### 貝氏定理 (Bayes' Theorem)
+
+$$P(A|B) = \frac{P(B|A) \cdot P(A)}{P(B)}$$
+
+Quant 最常用的公式之一——用來**更新信念 (belief update)**。
+
+```python
+# 經典例子: 疾病檢測
+# 患病率 P(A) = 1%
+disease_rate = 0.01
+
+# 檢測準確率 P(B|A) = 99%
+true_positive = 0.99
+
+# 誤報率 P(B|not A) = 2%
+false_positive = 0.02
+
+# 如果檢測陽性，真正患病的機率
+p_b = true_positive * disease_rate + false_positive * (1 - disease_rate)
+p_a_given_b = (true_positive * disease_rate) / p_b
+print(f"P(A|B) = {p_a_given_b:.2%}")  # ~33%
+# 直覺: 即使檢測準確，因為患病率低，陽性結果仍只有 33% 機率真的患病
+```
+
+## 隨機變數與分布
+
+### 離散分布
+
+| 分布 | 用途 | 參數 |
+|------|------|------|
+| Binomial | n 次獨立實驗的成功次數 | n, p |
+| Poisson | 單位時間內事件發生次數 | λ |
+
+```python
+from scipy import stats
+import numpy as np
+
+# Binomial: 10 次交易中成功 6 次，每次勝率 50%
+binom = stats.binom(10, 0.5)
+p_6 = binom.pmf(6)
+print(f"P(6 successes) = {p_6:.3f}")  # 0.205
+```
+
+### 連續分布
+
+| 分布 | 用途 | 參數 |
+|------|------|------|
+| Normal | 資產回報近似（理想化）| μ, σ |
+| Log-normal | 資產價格分布 | μ, σ |
+| Student-t | 厚尾分布（更貼近真實市場）| ν |
+
+```python
+# Normal distribution
+normal = stats.norm(0, 1)  # 標準常態
+
+# P(Z < -1.96) ≈ 2.5%
+p_value = normal.cdf(-1.96)
+print(f"P(Z < -1.96) = {p_value:.4f}")  # 0.0250
+
+# 95% VaR (Value at Risk)
+var_95 = normal.ppf(0.05)
+print(f"95% VaR = {var_95:.2f}")  # -1.6449
+```
+
+### 🟢 練習
+
+```python
+# 1. 擲兩個骰子，計算總和為 7 的機率
+import itertools
+
+outcomes = list(itertools.product(range(1, 7), repeat=2))
+sum_7 = [pair for pair in outcomes if sum(pair) == 7]
+print(f"P(sum=7) = {len(sum_7)}/{len(outcomes)} = {len(sum_7)/len(outcomes):.3f}")
+
+# 2. 假設某交易策略月勝率 55%，一年 12 個月
+# 計算至少 8 個月賺錢的機率 (Binomial)
+from scipy import stats
+n_months = 12
+p_win = 0.55
+prob = 1 - stats.binom(n_months, p_win).cdf(7)
+print(f"P(≥8 winning months) = {prob:.3f}")
+```
+
+### 📚 延伸閱讀
+
+- [MIT 18.05: Introduction to Probability and Statistics](https://ocw.mit.edu/courses/18-05-introduction-to-probability-and-statistics-spring-2022/)
+- [Seeing Theory](https://seeing-theory.brown.edu/) — 視覺化機率論
+- *Probability for Risk Management* (Hassett & Stewart)

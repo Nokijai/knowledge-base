@@ -1,0 +1,128 @@
+---
+title: "Time Series Fundamentals"
+description: "平穩性、差分、自相關函數、ADF 檢定 — 金融時間序列的起點"
+difficulty: "beginner"
+order: 1
+tags: ["time-series", "stationarity", "acf", "adf"]
+prerequisites: ["probability-fundamentals", "numpy-pandas-crash-course"]
+date: 2026-07-28
+---
+
+時間序列是量化金融的**核心數據型態**——股價、匯率、利率，都是時間序列。
+
+## 什麼是時間序列？
+
+不同於橫截面資料（同一時間多個樣本），時間序列是**同一個變量在不同時間點的值**。
+
+```python
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+# 模擬股價時間序列
+np.random.seed(42)
+dates = pd.date_range('2025-01-01', periods=252, freq='B')
+returns = np.random.normal(0.001, 0.02, 252)
+price = 100 * np.exp(returns.cumsum())
+
+ts = pd.Series(price, index=dates, name='Stock A')
+```
+
+## 平穩性 (Stationarity)
+
+**平穩性**是時間序列分析最重要的概念。一個平穩序列的統計性質（均值、方差）**不隨時間改變**。
+
+### 非平穩 vs 平穩
+
+```
+Non-stationary (股價):        Stationary (回報率):
+  ↑                            ↑
+  |  ↗    ↘  ↗                |   ··  ··  ··
+  | ↗  ↘  ↗  ↘  ↗            |  ··  ··  ··  ··
+  |————————————→             |————————————→
+  均值隨時間變化                均值圍繞 0 波動
+```
+
+```python
+# 檢查平穩性
+from scipy import stats
+
+# 股價 — 非平穩 (均值隨時間變化)
+print(f"Price mean (first 50): {price[:50].mean():.2f}")
+print(f"Price mean (last 50):  {price[-50:].mean():.2f}")
+
+# 日回報 — 接近平穩
+daily_returns = price.pct_change().dropna()
+print(f"\nReturn mean (first 50): {daily_returns[:50].mean():.4f}")
+print(f"Return mean (last 50):  {daily_returns[-50:].mean():.4f}")
+```
+
+## ADF 檢定
+
+Augmented Dickey-Fuller 檢定：正式測試平穩性。
+
+```python
+from statsmodels.tsa.stattools import adfuller
+
+def check_stationarity(series, name=''):
+    result = adfuller(series.dropna())
+    p_value = result[1]
+    is_stationary = p_value < 0.05
+    print(f"{name}: p-value = {p_value:.6f} → {'✓ Stationary' if is_stationary else '✗ Non-stationary'}")
+    return is_stationary
+
+check_stationarity(price, 'Price')          # ✗ Non-stationary
+check_stationarity(daily_returns, 'Return') # ✓ Stationary
+```
+
+## 差分 (Differencing)
+
+將非平穩序列轉換為平穩序列的標準方法。
+
+```python
+# 一階差分
+price_diff = price.diff().dropna()
+check_stationarity(price_diff, 'Price (1st diff)')  # ✓ Stationary
+
+# 有時候需要二階差分
+price_diff2 = price_diff.diff().dropna()
+check_stationarity(price_diff2, 'Price (2nd diff)')  # ✓ Stationary
+```
+
+## 自相關函數 (ACF)
+
+ACF 衡量序列與其**滯後版本**的相關性。
+
+```python
+from statsmodels.graphics.tsaplots import plot_acf
+import matplotlib.pyplot as plt
+
+# 計算 ACF
+from statsmodels.tsa.stattools import acf
+
+acf_values = acf(daily_returns, nlags=20)
+print("ACF (first 5 lags):", np.round(acf_values[:5], 4))
+# 金融日回報的 ACF 通常接近 0（無自相關）
+```
+
+<Callout type="tip" title="金融 stylized facts">
+日回報的 ACF 接近 0（市場有效），但**平方回報**的 ACF 顯著為正——這就是波動率聚集 (volatility clustering) 的證據。
+</Callout>
+
+<Exercise title="Practice: Time Series">
+**1.** 下載 SPY 過去一年的數據，檢查其收盤價和日回報的平穩性
+
+**2.** 計算 rolling 20 天的標準差（波動率），畫圖觀察波動率聚集
+
+**3.** 解釋為什麼大部分金融時間序列需要先做**差分**才能建模
+</Exercise>
+
+<Info title="下一步：ARIMA 模型">
+學完基礎後，下一課將介紹 **ARIMA 和 GARCH 模型**——業界最常用的時間序列建模工具。
+</Info>
+
+### 📚 延伸閱讀
+
+- *Analysis of Financial Time Series* (Ruey Tsay) — Quant 必讀
+- [Introduction to Time Series Analysis](https://otexts.com/fpp3/) — 免費線上書
+- [Statsmodels TSA 文檔](https://www.statsmodels.org/stable/tsa.html)

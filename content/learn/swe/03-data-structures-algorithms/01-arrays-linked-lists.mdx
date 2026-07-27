@@ -1,0 +1,144 @@
+---
+title: "Arrays & Linked Lists"
+description: "最基本的兩種資料結構 — 記憶體佈局、操作複雜度、實作"
+difficulty: "beginner"
+order: 1
+tags: ["dsa", "arrays", "linked-lists", "data-structures"]
+prerequisites: ["python-basics"]
+date: 2026-07-28
+---
+
+資料結構是**組織資料的方式**。選擇正確的資料結構，決定了程式 90% 的效能。
+
+## Array (陣列)
+
+陣列是**連續的記憶體區塊**——每個元素大小相同，緊鄰排列。
+
+```python
+# Python list 底層是動態陣列
+arr = [10, 20, 30, 40, 50]
+
+# 隨機存取: O(1) — 直接計算記憶體位址
+print(arr[2])       # 30
+
+# 插入/刪除: O(n) — 需要位移元素
+arr.insert(2, 25)   # [10, 20, 25, 30, 40, 50]
+arr.pop(0)          # [20, 25, 30, 40, 50]
+
+# append 在尾部: amortized O(1)
+arr.append(60)      # [20, 25, 30, 40, 50, 60]
+```
+
+| 操作 | Array | 說明 |
+|------|-------|------|
+| Access | O(1) | 直接索引 |
+| Search | O(n) | 線性搜尋 |
+| Insert (head) | O(n) | 全部後移 |
+| Insert (tail) | O(1)* | *amortized |
+| Delete | O(n) | 全部前移 |
+
+<Callout type="tip" title="Amortized O(1)">
+動態陣列滿了時會**翻倍擴充**（2x）。大多數 append 是 O(1)，只有擴充那次是 O(n)。平均下來每個操作是 O(1)。
+</Callout>
+
+## Linked List (鏈表)
+
+鏈表由 **node** 組成，每個 node 儲存資料和指向下一個 node 的指標。
+
+```python
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+class LinkedList:
+    def __init__(self):
+        self.head = None
+
+    def append(self, val):
+        if not self.head:
+            self.head = ListNode(val)
+            return
+        curr = self.head
+        while curr.next:
+            curr = curr.next
+        curr.next = ListNode(val)
+
+    def prepend(self, val):
+        node = ListNode(val, self.head)
+        self.head = node
+
+    def delete(self, val):
+        if not self.head:
+            return
+        if self.head.val == val:
+            self.head = self.head.next
+            return
+        curr = self.head
+        while curr.next and curr.next.val != val:
+            curr = curr.next
+        if curr.next:
+            curr.next = curr.next.next
+
+    def to_list(self):
+        result = []
+        curr = self.head
+        while curr:
+            result.append(curr.val)
+            curr = curr.next
+        return result
+
+# 使用
+ll = LinkedList()
+ll.append(1)
+ll.append(2)
+ll.prepend(0)
+print(ll.to_list())  # [0, 1, 2]
+```
+
+## Array vs Linked List
+
+```
+Array:    [A][B][C][D][ ] ← 連續記憶體
+           ↑ 快! arr[2] = O(1)
+
+Linked:   [A] → [B] → [C] → [D] → None
+           ↑ 慢! 要遍歷才能找到 index 2
+```
+
+| 比較 | Array | Linked List |
+|------|-------|-------------|
+| 記憶體 | 連續區塊 | 分散 node |
+| Access | O(1) | O(n) |
+| Insert head | O(n) | O(1) |
+| Insert tail | O(1)* | O(n) / O(1) with tail ptr |
+| 空間 overhead | 低 | 高 (每個 node 存指標) |
+| cache locality | 好 | 差 |
+
+<Exercise title="Practice: Arrays & Linked Lists">
+**1.** 實作一個函式反轉 linked list:
+```python
+def reverse_list(head: ListNode) -> ListNode:
+    # 你的程式碼
+    pass
+```
+
+**2.** 給定一個排序好的 array，找到 target 的 index（binary search）:
+```python
+def binary_search(arr, target):
+    # 你的程式碼
+    pass
+```
+
+**3.** 解釋為什麼 array 的插入是 O(n) 但 linked list 的插入是 O(1)。
+</Exercise>
+
+<Info title="下一步">
+下一課將介紹**排序與搜尋演算法**——把這些資料結構用起來！
+</Info>
+
+### 📚 延伸閱讀
+
+- [jwasham/coding-interview-university](https://github.com/jwasham/coding-interview-university) (357k⭐)
+- *Cracking the Coding Interview* (McDowell) — 面試聖經
+- [Visualgo.net](https://visualgo.net) — 視覺化資料結構

@@ -1,0 +1,13 @@
+{
+  "title": "Software Engineering",
+  "slug": "swe",
+  "description": "從 CS 基礎到系統設計的完整學習路徑。 covered: 程式設計、資料結構、演算法、OS、網路、系統設計。",
+  "icon": "code",
+  "color": "#5e6ad2",
+  "units": [
+    "00-prerequisites",
+    "01-programming",
+    "02-math-for-cs",
+    "03-data-structures-algorithms"
+  ]
+}

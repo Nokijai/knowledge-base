@@ -1,0 +1,10 @@
+{
+  "title": "Time Series Analysis",
+  "slug": "02-time-series",
+  "order": 2,
+  "description": "時間序列核心概念 — 平穩性、ARIMA、GARCH、共整合。",
+  "lessons": [
+    "01-time-series-fundamentals",
+    "02-arima-garch-models"
+  ]
+}

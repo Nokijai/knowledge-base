@@ -1,0 +1,140 @@
+---
+title: "Python Deep Dive: Functions & Scope"
+description: "Python 函式進階 — 閉包、decorator、generator、上下文管理器"
+difficulty: "intermediate"
+order: 1
+tags: ["python", "functions", "closures", "decorators"]
+prerequisites: ["python-basics"]
+date: 2026-07-27
+---
+
+## 函式是一級公民
+
+在 Python 中，函式是**物件**——可以當作參數傳遞、作為回傳值、存入資料結構。
+
+```python
+def square(x):
+    return x ** 2
+
+def cube(x):
+    return x ** 3
+
+# 函式作為參數
+def apply(func, values):
+    return [func(v) for v in values]
+
+print(apply(square, [1, 2, 3, 4]))  # [1, 4, 9, 16]
+print(apply(cube, [1, 2, 3, 4]))    # [1, 8, 27, 64]
+```
+
+## Scope 與 LEGB 規則
+
+Python 搜尋變數的順序：
+
+1. **L**ocal — 函式內部
+2. **E**nclosing — 外層函式
+3. **G**lobal — 模組層級
+4. **B**uilt-in — 內建函式
+
+```python
+x = "global"
+
+def outer():
+    x = "enclosing"
+    def inner():
+        x = "local"
+        print(x)
+    inner()
+    print(x)
+
+outer()
+print(x)
+# local
+# enclosing
+# global
+```
+
+## 閉包 (Closure)
+
+內層函式"記住"外層函式的變數，即使外層已經執行完畢。
+
+```python
+def make_counter():
+    count = 0
+    def counter():
+        nonlocal count
+        count += 1
+        return count
+    return counter
+
+c1 = make_counter()
+print(c1())  # 1
+print(c1())  # 2
+print(c1())  # 3
+
+c2 = make_counter()
+print(c2())  # 1  (獨立狀態)
+```
+
+## Decorator
+
+裝飾器是函式的函式——在不修改原函式的情況下增加功能。
+
+```python
+import time
+
+def timer(func):
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        elapsed = time.time() - start
+        print(f"{func.__name__} took {elapsed:.4f}s")
+        return result
+    return wrapper
+
+@timer
+def slow_function():
+    return sum(range(10_000_000))
+
+slow_function()
+# slow_function took 0.2345s
+```
+
+## Generator
+
+用 `yield` 實現惰性求值——一次只產生一個值，記憶體效率極高。
+
+```python
+def fibonacci(n):
+    a, b = 0, 1
+    for _ in range(n):
+        yield a
+        a, b = b, a + b
+
+for num in fibonacci(10):
+    print(num)
+# 0, 1, 1, 2, 3, 5, 8, 13, 21, 34
+```
+
+### 🟢 練習
+
+1. 寫一個 `@retry` decorator，當函式拋出例外時自動重試最多 3 次
+2. 用 generator 實作一個可以無限迭代的 `primes()` 質數產生器
+3. 寫一個 `make_multiplier(n)` 閉包，回傳乘以 n 的函式
+
+```python
+# 練習 1 範本
+def retry(max_attempts=3):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            # 你的程式碼
+            pass
+        return wrapper
+    return decorator
+```
+
+### 📚 延伸閱讀
+
+- [Python Official Docs: Functions](https://docs.python.org/3/tutorial/controlflow.html#defining-functions)
+- *Fluent Python* (Luciano Ramalho) — 第 7-8 章
+- [Real Python: Primer on Python Decorators](https://realpython.com/primer-on-python-decorators/)

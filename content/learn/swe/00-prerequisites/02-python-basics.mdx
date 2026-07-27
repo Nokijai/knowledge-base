@@ -1,0 +1,106 @@
+---
+title: "Python Basics"
+description: "Python 程式設計入門 — 變數、控制流程、函式、資料結構"
+difficulty: "beginner"
+order: 2
+tags: ["python", "programming-basics"]
+prerequisites: ["what-is-computer-science"]
+date: 2026-07-27
+---
+
+## 為什麼學 Python？
+
+Python 是 CS 領域最通用的第一門語言。語法簡潔、生態系強大，從腳本到機器學習都能用。
+
+## 變數與型別
+
+Python 是動態型別語言 — 變數不需要宣告型別：
+
+```python
+# 基本型別
+name = "Alice"       # str
+age = 20             # int
+height = 1.75        # float
+is_student = True    # bool
+
+# 型別提示 (Type Hints) — Python 3.6+
+def greet(name: str) -> str:
+    return f"Hello, {name}"
+```
+
+## 控制流程
+
+```python
+# 條件判斷
+score = 85
+if score >= 90:
+    grade = "A"
+elif score >= 80:
+    grade = "B"
+else:
+    grade = "C"
+
+# for loop
+for i in range(5):
+    print(i)  # 0, 1, 2, 3, 4
+
+# while loop
+x = 0
+while x < 5:
+    x += 1
+```
+
+## 核心資料結構
+
+```python
+# List — 有序可變
+arr = [1, 2, 3, 4, 5]
+arr.append(6)
+arr[0]    # 1
+arr[-1]   # 6
+
+# Tuple — 有序不可變
+point = (3, 4)
+x, y = point  # unpacking
+
+# Dict — 鍵值對
+d = {"name": "Alice", "age": 20}
+d["name"]       # "Alice"
+d.get("score", 0)  # 0 (default)
+
+# Set — 無序不重複
+s = {1, 2, 3, 3, 3}
+# {1, 2, 3}
+```
+
+## 函式
+
+```python
+def fib(n: int) -> list[int]:
+    """Return first n Fibonacci numbers."""
+    result = [0, 1]
+    for _ in range(n - 2):
+        result.append(result[-1] + result[-2])
+    return result
+
+print(fib(10))
+# [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]
+```
+
+### 🟢 練習
+
+1. 寫一個函式 `is_palindrome(s)` 判斷字串是否為迴文
+2. 用 dictionary 統計一句話中每個字母出現次數
+3. 寫一個 list comprehension 產生 1-20 的平方數列表
+
+```python
+# 練習 1 範本
+def is_palindrome(s: str) -> bool:
+    # 你的程式碼
+    pass
+```
+
+### 📚 延伸閱讀
+
+- [Python Official Tutorial](https://docs.python.org/3/tutorial/) — 官方教學
+- [CS50's Python](https://cs50.harvard.edu/python/) — Harvard 免費課程

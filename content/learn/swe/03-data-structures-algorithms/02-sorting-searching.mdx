@@ -1,0 +1,128 @@
+---
+title: "Sorting & Searching"
+description: "排序與搜尋的核心演算法 — 複雜度分析、實作、應用場景"
+difficulty: "intermediate"
+order: 2
+tags: ["dsa", "sorting", "searching", "algorithms"]
+prerequisites: ["arrays-linked-lists"]
+date: 2026-07-28
+---
+
+排序是電腦科學中最經典的問題。**理解排序演算法 = 理解演算法分析**。
+
+## 為什麼排序這麼重要？
+
+排序讓搜尋變快——**未排序的陣列搜尋是 O(n)，排序後是 O(log n)**。
+
+## 三大經典排序
+
+### 1. Merge Sort — O(n log n) 穩定
+
+分治法經典：把陣列分成兩半，分別排序，再合併。
+
+```python
+def merge_sort(arr):
+    if len(arr) <= 1:
+        return arr
+
+    mid = len(arr) // 2
+    left = merge_sort(arr[:mid])
+    right = merge_sort(arr[mid:])
+
+    # Merge 兩個已排序的子陣列
+    result = []
+    i = j = 0
+    while i < len(left) and j < len(right):
+        if left[i] <= right[j]:
+            result.append(left[i])
+            i += 1
+        else:
+            result.append(right[j])
+            j += 1
+    result.extend(left[i:])
+    result.extend(right[j:])
+    return result
+
+print(merge_sort([38, 27, 43, 3, 9, 82, 10]))
+# [3, 9, 10, 27, 38, 43, 82]
+```
+
+### 2. Quick Sort — O(n log n) 平均，O(n²) 最差
+
+選 pivot，把陣列分為小於和大於 pivot 兩邊。
+
+```python
+def quick_sort(arr):
+    if len(arr) <= 1:
+        return arr
+    pivot = arr[len(arr) // 2]
+    left = [x for x in arr if x < pivot]
+    middle = [x for x in arr if x == pivot]
+    right = [x for x in arr if x > pivot]
+    return quick_sort(left) + middle + quick_sort(right)
+```
+
+<Callout type="tip" title="Quick Sort 為什麼比 Merge Sort 快？">
+雖然兩者都是 O(n log n)，但 Quick Sort 的**常數更小**（in-place、cache-friendly）。這也是為什麼 Python 的 `.sort()` 底層用 Timsort（混合 Merge + Insertion）。
+</Callout>
+
+### 3. Binary Search — O(log n)
+
+建立在排序之上的超高效搜尋。
+
+```python
+def binary_search(arr, target):
+    left, right = 0, len(arr) - 1
+
+    while left <= right:
+        mid = (left + right) // 2
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    return -1
+
+arr = [1, 3, 5, 7, 9, 11, 13]
+print(binary_search(arr, 7))  # 3
+print(binary_search(arr, 8))  # -1
+```
+
+## 複雜度比較
+
+| 演算法 | 時間 (平均) | 時間 (最差) | 空間 | 穩定 |
+|--------|------------|------------|------|------|
+| Bubble Sort | O(n²) | O(n²) | O(1) | ✓ |
+| Merge Sort | O(n log n) | O(n log n) | O(n) | ✓ |
+| Quick Sort | O(n log n) | O(n²) | O(log n) | ✗ |
+| Heap Sort | O(n log n) | O(n log n) | O(1) | ✗ |
+| Timsort (Python) | O(n log n) | O(n log n) | O(n) | ✓ |
+
+<Warning title="面試重點">
+排序是面試熱點。重點不在背代碼，而是理解：
+1. 為什麼 Merge Sort 需要 O(n) 額外空間？
+2. Quick Sort 什麼時候會退化到 O(n²)？
+3. 為什麼 Timsort 對「幾乎排序好」的陣列特別快？
+</Warning>
+
+<Exercise title="Practice: Sorting & Searching">
+**1.** 實作一個 `find_kth_largest(arr, k)` 函式，用 Quick Select 找到第 k 大元素（平均 O(n)）
+
+**2.** 給定兩個排序好的 array，合併成一個排序好的 array（不用 `sorted()`）
+
+**3.** 解釋：為什麼 Binary Search 需要排序？如果陣列未排序會怎樣？
+
+**4.** 實作一個檢查 array 是否已排序的函式:
+```python
+def is_sorted(arr):
+    # 你的程式碼
+    pass
+```
+</Exercise>
+
+### 📚 延伸閱讀
+
+- [Visualgo — Sorting](https://visualgo.net/en/sorting) — 視覺化排序過程
+- *Introduction to Algorithms* (CLRS) — 演算法聖經
+- [Timsort Explained](https://svn.python.org/projects/python/trunk/Objects/listsort.txt) — Python 排序底層

@@ -1,0 +1,137 @@
+---
+title: "NumPy & Pandas Crash Course"
+description: "金融數據分析的兩大神器 — 向量化運算、時間序列操作、DataFrame 技巧"
+difficulty: "beginner"
+order: 2
+tags: ["numpy", "pandas", "python", "data-analysis"]
+prerequisites: ["python-for-quant"]
+date: 2026-07-27
+---
+
+## NumPy: 向量化運算
+
+Python loop 很慢。NumPy 用 C 實現，**向量化運算比 Python loop 快 50-100 倍**。
+
+```python
+import numpy as np
+import time
+
+# Python loop vs NumPy vectorized
+n = 10_000_000
+py_arr = list(range(n))
+np_arr = np.arange(n)
+
+# Python loop
+start = time.time()
+result = [x * 2 for x in py_arr]
+print(f"Python loop: {time.time() - start:.2f}s")
+
+# NumPy vectorized
+start = time.time()
+result = np_arr * 2
+print(f"NumPy: {time.time() - start:.2f}s")
+# Python loop: ~1.5s
+# NumPy: ~0.02s
+```
+
+### 金融常用 NumPy 操作
+
+```python
+# 建立陣列
+prices = np.array([100, 102, 101, 105, 107])
+
+# 基本統計
+mean = np.mean(prices)
+std = np.std(prices, ddof=1)  # 樣本標準差
+corr = np.corrcoef(returns_a, returns_b)
+
+# 線性代數
+beta = np.linalg.lstsq(X, y, rcond=None)[0]
+
+# 隨機模擬
+sims = np.random.normal(0, 0.01, size=(1000, 252))
+```
+
+## Pandas: 金融時間序列
+
+Pandas 是 Quant 最重要的工具。它的 DataFrame 和 Series 讓金融數據分析變得直觀。
+
+### DataFrame 基礎
+
+```python
+import pandas as pd
+
+# 從 CSV 讀取
+df = pd.read_csv('aapl.csv', parse_dates=['date'], index_col='date')
+
+# 查看數據
+df.head()       # 前 5 行
+df.info()       # 資料型別、缺失值
+df.describe()   # 基本統計量
+
+# 選取欄位
+df['close']          # 單一欄位 (Series)
+df[['open', 'close']]  # 多欄位 (DataFrame)
+
+# 條件篩選
+df[df['volume'] > 1_000_000]
+```
+
+### 時間序列專用操作
+
+```python
+# 日期範圍
+dates = pd.date_range('2026-01-01', '2026-12-31', freq='B')  # 交易日
+
+# 滾動窗口
+df['sma_20'] = df['close'].rolling(20).mean()
+df['vol_20'] = df['returns'].rolling(20).std() * np.sqrt(252)
+
+# Resample
+monthly = df.resample('M').agg({
+    'close': 'last',
+    'volume': 'sum',
+    'returns': 'mean'
+})
+
+# Shift — 避免 look-ahead bias
+df['signal'] = df['sma_20'].shift(1)  # 用昨天的信號
+```
+
+### 多資產操作
+
+```python
+# 建立多資產 DataFrame
+assets = ['AAPL', 'GOOGL', 'MSFT']
+prices = yf.download(assets, start='2025-01-01')['Close']
+
+# 計算所有資產的日回報
+returns = prices.pct_change()
+
+# 相關係數矩陣
+corr_matrix = returns.corr()
+
+# 累積收益
+cum_returns = (1 + returns).cumprod()
+```
+
+### 🟢 練習
+
+```python
+# 下載 AAPL 和 SPY 過去一年的數據
+# 1. 計算兩者的日回報率
+# 2. 計算 rolling 60 天的相關係數
+# 3. 繪製累積收益曲線
+
+import yfinance as yf
+import pandas as pd
+import numpy as np
+
+# 你的程式碼
+```
+
+### 📚 延伸閱讀
+
+- [Pandas Documentation](https://pandas.pydata.org/docs/) — 官方文檔
+- [NumPy for Quantitative Finance](https://numpy.org/numpy-tutorials/) — 官方教學
+- [QuantLib](https://github.com/enthought/QuantLib) (PyQL) — Quant 級金融計算

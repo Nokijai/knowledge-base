@@ -1,0 +1,134 @@
+---
+title: "Black-Scholes Model"
+description: "期權定價的基石 — Black-Scholes 公式、假設、Python 實作"
+difficulty: "intermediate"
+order: 1
+tags: ["options", "black-scholes", "pricing", "derivatives"]
+prerequisites: ["probability-fundamentals"]
+date: 2026-07-28
+---
+
+Black-Scholes 模型是**金融工程的皇冠**。1997 年諾貝爾經濟學獎的成果，至今仍是期權市場的定價基準。
+
+## 核心想法
+
+期權價格由**五個變數**決定：
+
+$$C(S, K, T, r, \sigma)$$
+
+| 變數 | 符號 | 意義 |
+|------|------|------|
+| 標的資產價格 | S | 目前股價 |
+| 履約價 | K | 合約規定的買賣價格 |
+| 到期時間 | T | 距離到期剩餘時間（年） |
+| 無風險利率 | r | 國債利率 |
+| 波動率 | σ | 標的資產的年化波動率 |
+
+## Black-Scholes 公式
+
+### Call Option (買權)
+
+$$C = S_0 N(d_1) - K e^{-rT} N(d_2)$$
+
+### Put Option (賣權)
+
+$$P = K e^{-rT} N(-d_2) - S_0 N(-d_1)$$
+
+### 其中
+
+$$d_1 = \frac{\ln(S_0/K) + (r + \sigma^2/2)T}{\sigma\sqrt{T}}$$
+$$d_2 = d_1 - \sigma\sqrt{T}$$
+
+$N(x)$ = 標準常態分布的 CDF
+
+## Python 實作
+
+```python
+import numpy as np
+from scipy import stats
+
+def black_scholes(S, K, T, r, sigma, option_type='call'):
+    """
+    S: 標的資產價格
+    K: 履約價
+    T: 到期時間 (年)
+    r: 無風險利率
+    sigma: 波動率
+    """
+    d1 = (np.log(S / K) + (r + 0.5 * sigma**2) * T) / (sigma * np.sqrt(T))
+    d2 = d1 - sigma * np.sqrt(T)
+
+    if option_type == 'call':
+        price = S * stats.norm.cdf(d1) - K * np.exp(-r * T) * stats.norm.cdf(d2)
+    else:
+        price = K * np.exp(-r * T) * stats.norm.cdf(-d2) - S * stats.norm.cdf(-d1)
+
+    return price
+
+# 範例：計算 AAPL call option 價格
+S = 200      # 目前股價 $200
+K = 210      # 履約價 $210
+T = 30/365   # 30 天到期
+r = 0.05     # 5% 無風險利率
+sigma = 0.25 # 25% 年化波動率
+
+call_price = black_scholes(S, K, T, r, sigma, 'call')
+put_price = black_scholes(S, K, T, r, sigma, 'put')
+
+print(f"Call Price: ${call_price:.2f}")
+print(f"Put Price:  ${put_price:.2f}")
+```
+
+<Callout type="tip" title="Put-Call Parity">
+$$C - P = S_0 - K e^{-rT}$$
+這個關係必須成立，否則存在**套利機會**。可以用來驗證定價模型的一致性。
+</Callout>
+
+## 隱含波動率 (Implied Volatility)
+
+市場上看到的是**期權價格**，不是波動率。隱含波動率就是**把市場價格代入 BS 公式反推出來的 σ**。
+
+```python
+from scipy.optimize import brentq
+
+def implied_volatility(market_price, S, K, T, r, option_type='call'):
+    """反推出市場隱含的波動率"""
+    objective = lambda sigma: (
+        black_scholes(S, K, T, r, sigma, option_type) - market_price
+    )
+    return brentq(objective, 0.01, 2.0)
+
+# 如果市場 call 價格是 $3.50
+iv = implied_volatility(3.50, 200, 210, 30/365, 0.05, 'call')
+print(f"Implied Volatility: {iv:.1%}")  # 應該接近 25%
+```
+
+<Callout type="warning" title="Black-Scholes 的假設">
+BS 模型假設過多，實際市場中**全部不成立**：
+1. 波動率固定 → 實際上波動率有**微笑 (volatility smile)**
+2. 利率固定 → 實際上利率曲線是斜的
+3. 連續交易 → 實際上交易有離散性和成本
+4. 常態分布 → 實際上金融回報有**厚尾**
+
+但 BS 仍然是業界**共同語言**，所有更複雜的模型都以 BS 為基準。
+</Callout>
+
+<Exercise title="Practice: Black-Scholes">
+**1.** 計算一個 ATM（平價）call option 的價格：S=K=100, T=1y, r=5%, σ=20%
+
+**2.** 寫一個函式計算 option 的**損益兩平點**：
+- Call: `break_even = K + premium`
+- Put: `break_even = K - premium`
+
+**3.** 試著解釋：為什麼波動率越高，option 越貴？
+</Exercise>
+
+<Info title="下一步：Greeks">
+學完定價後，下一課將介紹 **Greeks**——Delta、Gamma、Theta、Vega、Rho——這些是風險管理的核心工具。
+</Info>
+
+### 📚 延伸閱讀
+
+- *Options, Futures, and Other Derivatives* (John Hull) — 衍生性商品聖經
+- [QuantLib Python](https://github.com/enthought/QuantLib) — 業界標準定價庫
+- [vollib](https://github.com/vollib/vollib) — Python 期權定價

@@ -1,0 +1,10 @@
+{
+  "title": "Data Structures & Algorithms",
+  "slug": "03-data-structures-algorithms",
+  "order": 3,
+  "description": "陣列、鏈表、樹、圖、排序、搜尋、DP — 面試與實戰核心。",
+  "lessons": [
+    "01-arrays-linked-lists",
+    "02-sorting-searching"
+  ]
+}

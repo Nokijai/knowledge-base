@@ -1,0 +1,140 @@
+---
+title: "Discrete Mathematics"
+description: "邏輯、集合、函數、圖論 — CS 的數學語言"
+difficulty: "beginner"
+order: 1
+tags: ["math", "discrete-math", "logic", "sets", "graphs"]
+prerequisites: ["what-is-computer-science", "python-basics"]
+date: 2026-07-27
+---
+
+離散數學是計算機科學的**母語**。不同於連續數學（微積分），它處理的是**可數的、分離的**結構——這正是電腦的本質。
+
+## 為什麼需要離散數學？
+
+<Tip title="Why Discrete?">
+電腦用 0 和 1 運作——沒有「中間值」。網路封包要嘛送達要嘛不送達。資料庫的查詢結果是離散的記錄。所以 CS 的數學基礎是離散的。
+</Tip>
+
+## 命題邏輯 (Propositional Logic)
+
+```python
+# 邏輯運算子在 Python 中
+p = True
+q = False
+
+print(p and q)  # AND:  False
+print(p or q)   # OR:   True
+print(not p)    # NOT:  False
+print(p ^ q)    # XOR:  True
+
+# 邏輯等價：De Morgan's Law
+# not (p and q) == (not p) or (not q)
+print(not (p and q) == (not p) or (not q))  # True
+```
+
+| 運算 | 記號 | 中文 | 意義 |
+|------|------|------|------|
+| AND | ∧ | 且 | 兩者皆真才真 |
+| OR | ∨ | 或 | 至少一個真 |
+| NOT | ¬ | 非 | 反轉 |
+| XOR | ⊕ | 互斥或 | 剛好一個真 |
+| Implication | → | 蘊含 | 若 P 則 Q |
+
+## 集合論 (Set Theory)
+
+集合是一切資料結構的基礎。
+
+```python
+# Python 中的集合操作
+A = {1, 2, 3, 4, 5}
+B = {4, 5, 6, 7, 8}
+
+print(A | B)   # Union:      {1,2,3,4,5,6,7,8}
+print(A & B)   # Intersection: {4,5}
+print(A - B)   # Difference:  {1,2,3}
+print(A ^ B)   # Sym Diff:    {1,2,3,6,7,8}
+
+# Subset check
+print({1, 2}.issubset(A))  # True
+print(A.issuperset({1, 2})) # True
+```
+
+## 圖論 (Graph Theory)
+
+圖是 CS 最重要的抽象之一——從社交網路到路線規劃，無處不在。
+
+```python
+# 用 dictionary 表示圖 (adjacency list)
+graph = {
+    'A': ['B', 'C'],
+    'B': ['A', 'D', 'E'],
+    'C': ['A', 'F'],
+    'D': ['B'],
+    'E': ['B', 'F'],
+    'F': ['C', 'E'],
+}
+
+# DFS (Depth-First Search)
+def dfs(graph, start, visited=None):
+    if visited is None:
+        visited = set()
+    visited.add(start)
+    for neighbor in graph[start]:
+        if neighbor not in visited:
+            dfs(graph, neighbor, visited)
+    return visited
+
+print(dfs(graph, 'A'))  # {'A', 'B', 'C', 'D', 'E', 'F'}
+
+# BFS (Breadth-First Search) — 最短路徑
+from collections import deque
+
+def bfs(graph, start, goal):
+    queue = deque([(start, [start])])
+    visited = {start}
+    while queue:
+        node, path = queue.popleft()
+        if node == goal:
+            return path
+        for neighbor in graph[node]:
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append((neighbor, path + [neighbor]))
+    return None
+
+print(bfs(graph, 'A', 'F'))  # ['A', 'C', 'F']
+```
+
+<Exercise title="Practice: Logic & Sets">
+**1.** 用 truth table 證明 `(p → q) ≡ (¬p ∨ q)`
+
+**2.** 寫一個 Python 函式判斷兩個集合是否 disjoint（沒有交集）:
+```python
+def are_disjoint(A, B):
+    # 你的程式碼
+    pass
+```
+
+**3.** 給定一個 graph，找出所有 connected components:
+```python
+graph = {
+    0: [1, 2],
+    1: [0],
+    2: [0],
+    3: [4],
+    4: [3],
+}
+# Expected: [[0,1,2], [3,4]]
+```
+</Exercise>
+
+<Info title="下一步：線性代數">
+學完離散數學後，下一課將介紹**線性代數**——這是圖形學、機器學習、量子計算的基礎。
+</Info>
+
+### 📚 延伸閱讀
+
+- *Mathematics for Computer Science* (MIT 6.042J) — [OCW](https://ocw.mit.edu/courses/6-042j-mathematics-for-computer-science-fall-2010/)
+- *Discrete Mathematics and Its Applications* (Kenneth Rosen) — 經典教材
+- [3Blue1Brown — Graph Theory](https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab)

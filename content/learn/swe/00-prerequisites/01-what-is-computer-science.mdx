@@ -1,0 +1,107 @@
+---
+title: "What is Computer Science?"
+description: "計算機科學的核心概念 — 從 Alan Turing 到現代計算理論"
+difficulty: "beginner"
+order: 1
+tags: ["cs-fundamentals", "intro"]
+prerequisites: []
+date: 2026-07-27
+---
+
+## 計算機科學不是什麼？
+
+很多人以為 CS = 寫程式。但計算機科學 **不是** 關於電腦本身——就像天文學不是關於望遠鏡。
+
+> **Computer science is no more about computers than astronomy is about telescopes.**
+> — Edsger Dijkstra
+
+電腦只是工具。CS 研究的是 **計算** 的本質：什麼可以被計算？如何有效率地計算？如何證明一個程式是正確的？
+
+## 三大支柱
+
+### 1. 理論 (Theory)
+
+研究計算的數學基礎：
+
+- **可計算性 (Computability)**：哪些問題可以被計算機解決？
+- **計算複雜度 (Complexity)**：解決一個問題需要多少時間/空間？
+- **形式語言 (Formal Languages)**：如何精確描述語法和語意？
+
+```python
+# P vs NP — 計算機科學最大未解問題
+# P: 可以在多項式時間內解決
+# NP: 可以在多項式時間內驗證答案
+# 問題: P = NP ?
+
+def is_p_or_np(problem):
+    if problem == "sorting":
+        return "P (O(n log n))"
+    elif problem == "tsp":
+        return "NP (no known poly-time solution)"
+    return "unknown"
+```
+
+### 2. 抽象 (Abstraction)
+
+層層封裝複雜度：
+
+```
+應用層 (Application)
+    ↑
+高階語言 (Python, Java)
+    ↑
+作業系統 (OS)
+    ↑
+指令集架構 (ISA)
+    ↑
+微架構 (Microarchitecture)
+    ↑
+邏輯閘 (Logic Gates)
+    ↑
+電晶體 (Transistors)
+```
+
+每一層都對下一層隱藏細節。你寫 Python `print("hello")` 時，不需要知道 CPU 怎麼執行指令。
+
+### 3. 設計 (Design)
+
+把理論轉化為實際系統：
+
+- **演算法** (Algorithm): 解決問題的步驟
+- **資料結構** (Data Structure): 組織資料的方式
+- **系統設計** (System Design): 大規模系統的架構
+
+## 為什麼要學這些？
+
+**大學 CS 教育不是職業訓練**。它的目標是給你一個**心智模型 (mental model)**，讓你能：
+
+1. 理解任何程式語言的核心概念（學新語言只需幾天）
+2. 分析演算法的效率（知道為什麼某個解法快/慢）
+3. 設計正確且可維護的系統
+4. 讀懂學術論文，跟上市場最新發展
+
+## 這個路徑怎麼走？
+
+本課程路徑參考 [OSSU Computer Science](https://github.com/ossu/computer-science) (207k⭐) 設計：
+
+| 順序 | 單元 | 說明 |
+|------|------|------|
+| 00 | Prerequisites | CS 入門 + Python 基礎 |
+| 01 | Programming | Python 深入、OOP、FP |
+| 02 | Math for CS | 離散數學、線性代數 |
+| 03 | Data Structures & Algorithms | DSA 核心 |
+| 04 | Systems | OS、網路、DB |
+| 05 | System Design | 擴展性、架構 |
+| 06 | Software Architecture | Design patterns |
+
+### 🟢 練習
+
+1. 解釋為什麼 CS 被稱為"科學"而不是"工程"？
+2. 想想你日常用的某個 app，它涉及了哪些抽象層？
+3. 查一下 Alan Turing 的停機問題 (Halting Problem)，用自己的話解釋。
+
+### 📚 延伸閱讀
+
+- [OSSU Computer Science](https://github.com/ossu/computer-science) — 完整自學 CS 課程
+- [Teach Yourself Computer Science](https://teachyourselfcs.com/) — 濃縮版學習指南
+- *Structure and Interpretation of Computer Programs* (SICP) — MIT 經典教材
