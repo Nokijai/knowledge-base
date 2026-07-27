@@ -105,12 +105,13 @@ export default async function ArticlePage({
               <span className="text-xs text-muted">{post.readingTime} min read</span>
               <div className="flex gap-1.5 flex-wrap">
                 {post.tags.map((tag) => (
-                  <span
+                  <Link
                     key={tag}
-                    className="px-2 py-0.5 text-xs rounded-full bg-tag-bg text-tag-text"
+                    href={`/tags/${encodeURIComponent(tag)}`}
+                    className="px-2 py-0.5 text-xs rounded-full bg-tag-bg text-tag-text hover:bg-accent-dim/40 hover:text-accent transition-colors"
                   >
                     {tag}
-                  </span>
+                  </Link>
                 ))}
               </div>
             </div>
