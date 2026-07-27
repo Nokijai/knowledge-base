@@ -5,10 +5,10 @@ RUN npm ci --ignore-scripts --legacy-peer-deps
 
 FROM node:20-alpine AS builder
 WORKDIR /app
-ENV NODE_OPTIONS="--max-old-space-size=768"
+ENV NODE_OPTIONS="--max-old-space-size=1024"
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npx next build
+RUN ./node_modules/.bin/next build
 
 FROM node:20-alpine AS runner
 WORKDIR /app
