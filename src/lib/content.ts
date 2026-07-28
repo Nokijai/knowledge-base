@@ -27,6 +27,7 @@ function getAllMdxFiles(dir: string): string[] {
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
+      if (entry.name === 'learn') continue; // skip learn/ — handled by learn.ts
       files.push(...getAllMdxFiles(fullPath));
     } else if (entry.name.endsWith('.mdx')) {
       files.push(fullPath);
