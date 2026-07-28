@@ -1,0 +1,114 @@
+---
+title: "ARIMA & GARCH Models"
+description: "自迴歸移動平均模型與波動率建模 — 金融預測的核心工具"
+difficulty: "intermediate"
+order: 2
+tags: ["time-series", "arima", "garch", "forecasting", "volatility"]
+prerequisites: ["time-series-fundamentals"]
+date: 2026-07-28
+---
+
+ARIMA 和 GARCH 是金融時間序列建模的**兩大支柱**。ARIMA 建模**均值**（回報預測），GARCH 建模**方差**（風險預測）。
+
+## ARIMA 模型
+
+ARIMA = AutoRegressive Integrated Moving Average。
+
+$$ARIMA(p,d,q)$$
+
+- **p**: AR 項數（用過去值預測現在）
+- **d**: 差分階數（平穩化）
+- **q**: MA 項數（用過去誤差修正預測）
+
+```python
+from statsmodels.tsa.arima.model import ARIMA
+import numpy as np
+import pandas as pd
+
+# 模擬 AR(1) 過程: y_t = 0.7 * y_{t-1} + ε
+np.random.seed(42)
+n = 500
+eps = np.random.normal(0, 1, n)
+ar1 = np.zeros(n)
+for t in range(1, n):
+    ar1[t] = 0.7 * ar1[t-1] + eps[t]
+
+# 擬合 ARIMA(1,0,0) = AR(1)
+model = ARIMA(ar1, order=(1, 0, 0))
+result = model.fit()
+print(result.summary())
+
+# 預測下一步
+forecast = result.forecast(5)
+print(f"\nForecast (next 5): {np.round(forecast, 3)}")
+```
+
+<Callout type="tip" title="模型選擇：AIC/BIC">
+使用 AIC (Akaike Information Criterion) 或 BIC 選擇最佳 p,d,q。值越小越好。
+</Callout>
+
+```python
+# Auto ARIMA: 自動搜尋最佳參數
+from pmdarima import auto_arima
+
+auto_model = auto_arima(ar1, seasonal=False, trace=True)
+print(f"Best ARIMA: {auto_model.order}")  # 應該接近 (1,0,0)
+```
+
+## GARCH 模型
+
+GARCH 建模**波動率的聚集效應**——大波動後跟著大波動。
+
+$$GARCH(p,q)$$
+
+- **p**: ARCH 項（過去的 shock 影響）
+- **q**: GARCH 項（過去的波動率影響）
+
+```python
+from arch import arch_model
+
+# 模擬 GARCH(1,1) 過程
+# σ²_t = 0.01 + 0.1 * ε²_{t-1} + 0.85 * σ²_{t-1}
+garch_sim = arch_model(None, mean='Zero', vol='GARCH', p=1, q=1)
+sim_data = garch_sim.simulate(n_obs=1000)
+
+# 擬合 GARCH(1,1)
+returns = sim_data['data'] * 100  # 百分比回報
+model = arch_model(returns, vol='GARCH', p=1, q=1)
+result = model.fit(disp='off')
+print(result.params)
+```
+
+<Warning title="GARCH 的現實意義">
+GARCH(1,1) 是業界標準。參數的**和**（α + β）接近 1 表示波動率衝擊非常持久——這在金融市場中普遍成立。
+</Warning>
+
+## 實戰：Volatility Forecasting
+
+```python
+# 擬合 GARCH 並預測未來波動率
+model = arch_model(returns, vol='GARCH', p=1, q=1)
+res = model.fit(disp='off')
+
+# 獲取條件波動率
+conditional_vol = res.conditional_volatility
+
+# 預測未來 10 天的波動率
+forecasts = res.forecast(horizon=10)
+predicted_vol = np.sqrt(forecasts.variance.iloc[-1] / 252) * np.sqrt(252)
+print(f"Predicted annualized vol: {predicted_vol.values[0]:.2%}")
+```
+
+<Exercise title="Practice: ARIMA + GARCH">
+**1.** 下載一支股票的日回報數據，用 auto_arima 找到最佳 ARIMA 模型
+
+**2.** 擬合 GARCH(1,1) 模型，畫出 conditional volatility 曲線
+
+**3.** 解釋：為什麼用 GARCH 預測的 VaR 比用簡單標準差更準確？
+</Exercise>
+
+### 📚 延伸閱讀
+
+- *Analysis of Financial Time Series* (Tsay) — Ch.3-4
+- [arch 套件文檔](https://arch.readthedocs.io/) — Python GARCH 實作
+- *Volatility Trading* (Colin Bennett) — 波動率交易實戰

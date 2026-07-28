@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 import MobileHeader from '@/components/MobileHeader';
 import { getCategories, getDailyTechPosts, getDailyFinancePosts } from '@/lib/content';
+import { getTracks } from '@/lib/learn';
 
 const categoryIcons: Record<string, string> = {
   'quant-theory': '📐',
@@ -15,6 +16,7 @@ export default function Home() {
   const categories = getCategories();
   const dailyTechPosts = getDailyTechPosts();
   const dailyFinancePosts = getDailyFinancePosts();
+  const tracks = getTracks();
   const latestTech = dailyTechPosts[0] ?? null;
   const recentTech = dailyTechPosts.slice(1, 4);
   const latestFinance = dailyFinancePosts[0] ?? null;
@@ -147,6 +149,37 @@ export default function Home() {
               )}
             </section>
           )}
+
+          {/* Learn */}
+          <section className="mb-10">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xs uppercase tracking-wider text-muted font-semibold flex items-center gap-1.5">
+                <span>📖</span> Learn
+              </h2>
+              <Link href="/learn" className="text-xs text-accent hover:text-accent/80 transition-colors">
+                View all →
+              </Link>
+            </div>
+            <div className="grid gap-3">
+              {tracks.map((track) => {
+                const lessonCount = track.units.reduce((s, u) => s + u.lessons.length, 0);
+                return (
+                  <Link key={track.slug} href={`/learn/${track.slug}`} className="block group">
+                    <article className="p-4 rounded-xl border border-border bg-surface/30 hover:bg-surface hover:border-accent/40 transition-all">
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className="font-bold text-foreground group-hover:text-accent transition-colors">
+                          {track.slug === 'swe' ? '◈' : '◆'} {track.title}
+                        </h3>
+                        <span className="text-xs text-muted">{lessonCount} lessons</span>
+                      </div>
+                      <p className="text-sm text-muted line-clamp-1">{track.description}</p>
+                    </article>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+
           {/* Divider */}
           <div className="border-t border-border mb-10" />
 

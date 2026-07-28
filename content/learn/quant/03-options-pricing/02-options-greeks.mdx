@@ -1,0 +1,139 @@
+---
+title: "Options Greeks"
+description: "Delta、Gamma、Theta、Vega、Rho — 期權風險指標完全指南"
+difficulty: "intermediate"
+order: 2
+tags: ["options", "greeks", "risk", "hedging", "derivatives"]
+prerequisites: ["black-scholes-model"]
+date: 2026-07-28
+---
+
+Greeks 衡量期權價格對**各個變數的敏感度**。每個交易員每天看的就是這些數字。
+
+## 什麼是 Greeks？
+
+Greeks 是 BS 公式對各參數的**偏導數**：
+
+| Greek | 符號 | 衡量 | 公式 |
+|-------|------|------|------|
+| Delta | Δ | 對 S 的敏感度 | ∂V/∂S |
+| Gamma | Γ | Delta 對 S 的敏感度 | ∂²V/∂S² |
+| Theta | Θ | 對時間的敏感度 | ∂V/∂T |
+| Vega | ν | 對波動率的敏感度 | ∂V/∂σ |
+| Rho | ρ | 對利率的敏感度 | ∂V/∂r |
+
+## Python 實作
+
+```python
+import numpy as np
+from scipy import stats
+
+def black_scholes_greeks(S, K, T, r, sigma, option_type='call'):
+    d1 = (np.log(S / K) + (r + 0.5 * sigma**2) * T) / (sigma * np.sqrt(T))
+    d2 = d1 - sigma * np.sqrt(T)
+
+    # Delta
+    if option_type == 'call':
+        delta = stats.norm.cdf(d1)
+    else:
+        delta = -stats.norm.cdf(-d1)
+
+    # Gamma (call 和 put 相同)
+    gamma = stats.norm.pdf(d1) / (S * sigma * np.sqrt(T))
+
+    # Theta
+    theta = -(S * stats.norm.pdf(d1) * sigma) / (2 * np.sqrt(T))
+    if option_type == 'call':
+        theta -= r * K * np.exp(-r * T) * stats.norm.cdf(d2)
+    else:
+        theta += r * K * np.exp(-r * T) * stats.norm.cdf(-d2)
+
+    # Vega (call 和 put 相同)
+    vega = S * stats.norm.pdf(d1) * np.sqrt(T)
+
+    # Rho
+    if option_type == 'call':
+        rho = K * T * np.exp(-r * T) * stats.norm.cdf(d2)
+    else:
+        rho = -K * T * np.exp(-r * T) * stats.norm.cdf(-d2)
+
+    return {
+        'delta': delta,
+        'gamma': gamma,
+        'theta': theta / 365,  # 每日 Theta
+        'vega': vega / 100,    # 每 1% 波動率變化
+        'rho': rho / 100,      # 每 1% 利率變化
+    }
+
+# 範例計算
+S, K, T, r, sigma = 200, 210, 30/365, 0.05, 0.25
+greeks = black_scholes_greeks(S, K, T, r, sigma, 'call')
+
+for name, val in greeks.items():
+    print(f"{name:>6}: {val:+.4f}")
+"""
+ delta: +0.3421    # S 漲 $1，option 漲 $0.34
+ gamma: +0.0185    # S 漲 $1，delta 增 0.0185
+ theta: -0.0211    # 每天損失 $0.02（時間衰減）
+  vega: +0.0895    # IV 漲 1%，option 漲 $0.09
+   rho: +0.0031    # 利率漲 1%，option 漲 $0.003
+"""
+```
+
+## Greeks 深度解讀
+
+### Delta — 方向性風險
+
+Delta = 0.5 表示 option 的方向風險等於**半股股票**。
+
+```python
+# Delta 對沖：持有 delta 股股票來消除方向性風險
+shares_to_hedge = -greeks['delta'] * 100  # 每張合約 100 股
+print(f"Short {shares_to_hedge:.0f} shares to delta-hedge")
+```
+
+### Gamma — 凸性風險
+
+Gamma 高表示 delta 變化快——**near-the-money、接近到期的 option Gamma 最大**。
+
+### Theta — 時間衰減
+
+Theta 是 option 賣方的**利潤來源**。每天 option 都會因時間流逝而貶值。
+
+<Callout type="warning" title="Theta 與 Gamma 的關係">
+Theta 和 Gamma 是同一枚硬幣的兩面：
+$$\Theta \approx -\frac{1}{2} \Gamma S^2 \sigma^2$$
+高 Gamma 的 option 必然有高 Theta——**沒有免費午餐**。
+</Callout>
+
+### Vega — 波動率風險
+
+Vega 高表示 option 價格對波動率敏感——**long Vega = 賭波動率上升**。
+
+```python
+# Greeks 隨到期時間的變化
+for days in [60, 30, 7, 1]:
+    T = days / 365
+    g = black_scholes_greeks(200, 210, T, 0.05, 0.25, 'call')
+    print(f"T-{days:2d}: Δ={g['delta']:.3f}, Γ={g['gamma']:.4f}, Θ={g['theta']:.4f}, ν={g['vega']:.4f}")
+```
+
+<Exercise title="Practice: Greeks">
+**1.** 一個 ATM call (S=K=100, T=30d, σ=20%, r=5%)，計算所有 Greeks
+
+**2.** 解釋：為什麼**期權賣方**喜歡高 Theta？
+（提示：Theta 是誰的收入？）
+
+**3.** 實作一個 function 判斷一個 portfolio 是 long volatility 還是 short volatility：
+```python
+def is_long_vol(portfolio_greeks):
+    # 看看 Vega 的總和
+    pass
+```
+</Exercise>
+
+### 📚 延伸閱讀
+
+- *Dynamic Hedging* (Taleb) — 避險實戰經典
+- [py_vollib](https://github.com/vollib/py_vollib) — Greeks 計算庫
+- [Options Playground](https://www.optionsplayground.com/) — 互動式 Greeks 可視化

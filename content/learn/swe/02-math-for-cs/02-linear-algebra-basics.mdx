@@ -1,0 +1,152 @@
+---
+title: "Linear Algebra Basics"
+description: "向量、矩陣、線性轉換、特徵值 — ML 與 Quant 的共同基礎"
+difficulty: "intermediate"
+order: 2
+tags: ["math", "linear-algebra", "vectors", "matrices"]
+prerequisites: ["discrete-mathematics"]
+date: 2026-07-28
+---
+
+線性代數是**機器學習和量化金融的共同語言**。從 PCA 到 portfolio optimization，從神經網路到因子模型——底層全是線性代數。
+
+## 向量 (Vectors)
+
+向量是**有方向和大小的量**。在 Python 中，我們用 NumPy 處理向量。
+
+```python
+import numpy as np
+
+# 向量表示
+v = np.array([3, 4])
+w = np.array([1, 2])
+
+# 向量運算
+print(v + w)        # [4, 6]    加法
+print(v - w)        # [2, 2]    減法
+print(2 * v)        # [6, 8]    純量乘法
+
+# 內積 (Dot Product) — 最重要運算之一
+dot = np.dot(v, w)  # 3*1 + 4*2 = 11
+print(f"v·w = {dot}")
+
+# 向量長度 (Norm)
+norm = np.linalg.norm(v)  # sqrt(3² + 4²) = 5
+print(f"||v|| = {norm}")
+```
+
+<Callout type="tip" title="Dot Product Intuition">
+內積衡量兩個向量的**相似度**。值越大表示方向越一致。在金融中，內積用來計算相關係數和因子暴露。
+</Callout>
+
+## 矩陣 (Matrices)
+
+矩陣是**線性轉換**的表示法。
+
+```python
+import numpy as np
+
+# 2×3 矩陣
+A = np.array([[1, 2, 3],
+              [4, 5, 6]])
+
+B = np.array([[7, 8],
+              [9, 10],
+              [11, 12]])
+
+# 矩陣乘法: A(2×3) @ B(3×2) = C(2×2)
+C = A @ B
+print(C)
+# [[ 58,  64],
+#  [139, 154]]
+
+# 轉置 (Transpose)
+print(A.T)  # 變成 3×2
+
+# 反矩陣 (Inverse) — 解線性方程組的關鍵
+M = np.array([[1, 2],
+              [3, 4]])
+M_inv = np.linalg.inv(M)
+print(M @ M_inv)  # 近似單位矩陣
+# [[1, 0],
+#  [0, 1]]
+```
+
+## 線性轉換的幾何直覺
+
+```
+原始向量 v    旋轉 90°     縮放 2x
+  ↑              ←            ↑↑
+  |     →        |            ||
+  →           ↓               ↓↓
+```
+
+```python
+# 旋轉矩陣 (90 度)
+theta = np.pi / 2
+R = np.array([[np.cos(theta), -np.sin(theta)],
+              [np.sin(theta),  np.cos(theta)]])
+
+v = np.array([1, 0])
+v_rotated = R @ v
+print(v_rotated)  # [0, 1] — 從 (1,0) 轉到 (0,1)
+```
+
+## 特徵值與特徵向量
+
+這是線性代數的**核心概念**——找到那些被矩陣轉換後**方向不變**的向量。
+
+$$A \vec{v} = \lambda \vec{v}$$
+
+```python
+# PCA 的數學基礎
+A = np.array([[2, 1],
+              [1, 2]])
+
+eigenvalues, eigenvectors = np.linalg.eig(A)
+print(f"Eigenvalues: {eigenvalues}")    # [3, 1]
+print(f"Eigenvectors:\n{eigenvectors}")
+# [[ 0.707, -0.707],
+#  [ 0.707,  0.707]]
+```
+
+<Callout type="info" title="在 Quant 中的應用">
+- **Portfolio Optimization**: 用 covariance matrix 的特徵值分析風險來源
+- **PCA**: 用特徵分解降維，提取 yield curve 的主要驅動因子
+- **Factor Models**: 特徵向量就是因子暴露的方向
+</Callout>
+
+## 實戰：解線性回歸
+
+線性回歸的解析解：$\hat{\beta} = (X^T X)^{-1} X^T y$
+
+```python
+# 用正規方程解線性回歸
+np.random.seed(42)
+X = np.random.randn(100, 3)
+true_beta = np.array([2, -1, 0.5])
+y = X @ true_beta + 0.1 * np.random.randn(100)
+
+# Normal Equation
+beta_hat = np.linalg.inv(X.T @ X) @ X.T @ y
+print(f"True β:    {true_beta}")
+print(f"Estimated: {np.round(beta_hat, 3)}")
+```
+
+<Exercise title="Practice: Linear Algebra">
+**1.** 寫一個函式判斷兩個向量是否正交（內積為 0）:
+```python
+def is_orthogonal(v, w):
+    return abs(np.dot(v, w)) < 1e-10
+```
+
+**2.** 給定一個 covariance matrix，用 `np.linalg.eig` 找出所有 eigenvalue，並計算**總風險**（sum of eigenvalues）。
+
+**3.** 為什麼 portfolio optimization 需要 covariance matrix 可逆？
+</Exercise>
+
+### 📚 延伸閱讀
+
+- [3Blue1Brown — Essence of Linear Algebra](https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab) — 最佳視覺化教學
+- *Linear Algebra Done Right* (Axler) — 理論向
+- MIT 18.06 — Gilbert Strang 經典課程

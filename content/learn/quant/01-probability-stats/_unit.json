@@ -1,0 +1,9 @@
+{
+  "title": "Probability & Statistics",
+  "slug": "01-probability-stats",
+  "order": 1,
+  "description": "機率論基礎、統計推論、假設檢定 — Quant 必備數學工具。",
+  "lessons": [
+    "01-probability-fundamentals"
+  ]
+}

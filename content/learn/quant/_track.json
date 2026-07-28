@@ -1,0 +1,13 @@
+{
+  "title": "Quantitative Finance",
+  "slug": "quant",
+  "description": "從數學基礎到量化交易的完整學習路徑。 covered: 機率統計、時間序列、期權定價、投資組合、回測。",
+  "icon": "chart",
+  "color": "#f59e0b",
+  "units": [
+    "00-prerequisites",
+    "01-probability-stats",
+    "02-time-series",
+    "03-options-pricing"
+  ]
+}

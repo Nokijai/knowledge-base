@@ -1,0 +1,118 @@
+---
+title: "Python for Quant Finance"
+description: "量化金融必備的 Python 生態系 — NumPy, Pandas, 與金融數據處理"
+difficulty: "beginner"
+order: 1
+tags: ["python", "pandas", "numpy", "quant-basics"]
+prerequisites: []
+date: 2026-07-27
+---
+
+## 為什麼 Python 是 Quant 的第一選擇？
+
+在量化金融領域，Python 已經取代了 MATLAB 和大部分 C++ 的日常使用。原因很簡單：
+
+- **生態系成熟** — NumPy/Pandas/Scikit-learn 等 library 讓數值分析極有效率
+- **快速迭代** — 從想法到回測可以在幾小時內完成
+- **業界標準** — Goldman Sachs GS-Quant、Two Sigma、Citadel 都在用
+
+> "Python is the lingua franca of quantitative finance." — 幾乎每個 Quant 部門都這麼說
+
+## 金融數據處理的核心工具
+
+### NumPy — 數值計算引擎
+
+```python
+import numpy as np
+
+# 建立價格陣列
+prices = np.array([100.0, 101.5, 99.8, 102.3, 103.1])
+
+# 向量化計算 — 比 Python loop 快 50-100x
+returns = np.diff(prices) / prices[:-1]
+log_returns = np.diff(np.log(prices))
+
+print(f"Simple returns: {returns}")
+print(f"Log returns: {log_returns}")
+# Simple returns: [ 0.015 -0.0167  0.0251  0.0078]
+# Log returns:   [ 0.0149 -0.0169  0.0248  0.0078]
+```
+
+### Pandas — 時間序列操作
+
+```python
+import pandas as pd
+
+# 建立日期索引的價格序列
+dates = pd.date_range('2026-01-01', periods=5, freq='D')
+price_series = pd.Series(prices, index=dates, name='AAPL')
+
+# 金融常用操作：rolling window
+vol_20d = price_series.pct_change().rolling(3).std()
+print(f"Rolling volatility:\n{vol_20d}")
+
+# Resample 到不同頻率
+weekly = price_series.resample('W').last()
+```
+
+### 常用 Quant 工作流程
+
+```python
+# 1. 載入數據
+df = pd.read_csv('price_data.csv', parse_dates=['date'], index_col='date')
+
+# 2. 計算因子 (Factors)
+df['returns'] = df['close'].pct_change()
+df['sma_20'] = df['close'].rolling(20).mean()
+df['volatility'] = df['returns'].rolling(20).std()
+
+# 3. 策略信號
+df['signal'] = np.where(df['close'] > df['sma_20'], 1, -1)
+
+# 4. 回測損益
+df['strategy_returns'] = df['signal'].shift(1) * df['returns']
+df['cumulative_pnl'] = (1 + df['strategy_returns']).cumprod()
+```
+
+## 金融數據來源
+
+| 來源 | 類型 | 優點 |
+|------|------|------|
+| Yahoo Finance (`yfinance`) | 免費 | 容易取得歷史股價 |
+| Alpha Vantage | 免費/付費 | API 穩定，涵蓋全球市場 |
+| Polygon.io | 付費 | 高頻 tick 數據 |
+| Bloomberg Terminal | 付費 | 業界標準，數據最全 |
+| Quandl / Nasdaq Data Link | 付費 | 另類數據、基本面 |
+
+## 必裝套件
+
+```bash
+pip install numpy pandas polars matplotlib seaborn scipy statsmodels scikit-learn
+pip install yfinance pandas-datareader pyfolio quantstats
+```
+
+## 下回預告
+
+下一課我們會深入 **NumPy 與 Pandas 實戰**，包括：
+- 向量化運算 vs loop 的效能差異
+- Multi-index DataFrame 操作
+- 金融時間序列的合併與對齊
+
+### 🟢 練習
+
+```python
+# 用 yfinance 下載 AAPL 股價，計算 50 日移動平均
+# 提示: pip install yfinance
+import yfinance as yf
+
+# 你的程式碼在這裡
+aapl = yf.download("AAPL", start="2025-01-01")
+# 計算收盤價的 50 日 SMA
+# 計算每日回報率
+```
+
+### 📚 延伸閱讀
+
+- [GS-Quant](https://github.com/goldmansachs/gs-quant) (11k⭐) — Goldman Sachs 官方 Quant toolkit
+- [awesome-quant](https://github.com/wilsonfreitas/awesome-quant) (28k⭐) — 最完整的 Quant 資源列表
+- *Python for Finance* (Yves Hilpisch) — O'Reilly 經典教材

@@ -1,0 +1,10 @@
+{
+  "title": "Prerequisites",
+  "slug": "00-prerequisites",
+  "order": 0,
+  "description": "量化金融所需的前置基礎 — Python 資料分析工具鏈。",
+  "lessons": [
+    "01-python-for-quant",
+    "02-numpy-pandas-crash-course"
+  ]
+}

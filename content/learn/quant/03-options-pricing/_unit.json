@@ -1,0 +1,10 @@
+{
+  "title": "Options Pricing",
+  "slug": "03-options-pricing",
+  "order": 3,
+  "description": "期權定價模型 — Black-Scholes、Binomial Tree、Monte Carlo、Greeks。",
+  "lessons": [
+    "01-black-scholes-model",
+    "02-options-greeks"
+  ]
+}

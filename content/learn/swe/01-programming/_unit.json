@@ -1,0 +1,9 @@
+{
+  "title": "Programming Fundamentals",
+  "slug": "01-programming",
+  "order": 1,
+  "description": "Python 深入、OOP、函數式程式設計、型別系統。",
+  "lessons": [
+    "01-python-deep-dive-functions-scope"
+  ]
+}
