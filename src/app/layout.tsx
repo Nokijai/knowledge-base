@@ -22,6 +22,18 @@ export const metadata: Metadata = {
     template: "%s — Noki KB",
   },
   description: "Quant finance and software engineering knowledge base",
+  openGraph: {
+    title: "Knowledge Base — Noki",
+    description: "Quant finance and software engineering knowledge base",
+    type: "website",
+    images: [{ url: "/api/og", width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Knowledge Base — Noki",
+    description: "Quant finance and software engineering knowledge base",
+    images: ["/api/og"],
+  },
 };
 
 export default function RootLayout({

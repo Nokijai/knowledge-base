@@ -1,0 +1,24 @@
+# ── Systemd service for knowledge-base auto-deploy ──
+#
+# This service runs on the remote server and periodically checks
+# GHCR for new images. Deployments survive SSH disconnection.
+#
+# Install:
+#   sudo cp knowledge-base-watcher.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now knowledge-base-watcher
+#
+# Logs: journalctl -u knowledge-base-watcher -f
+
+[Unit]
+Description=Knowledge Base auto-deploy watcher
+After=docker.service network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/knowledge-base-deploy
+StandardOutput=journal+console
+
+[Install]
+WantedBy=multi-user.target

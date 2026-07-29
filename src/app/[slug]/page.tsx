@@ -9,7 +9,9 @@ import MobileHeader from "@/components/MobileHeader";
 import ProgressBar from "@/components/article/ProgressBar";
 import Toc from "@/components/article/Toc";
 import CodeBlock from "@/components/article/CodeBlock";
+import KeyboardNavHint from "@/components/article/KeyboardNavHint";
 import { extractHeadings, getRelatedPosts } from "@/lib/article";
+import rehypeHeadingLinks from "@/lib/rehype-heading-links";
 import {
   getAllPosts,
   getPostBySlug,
@@ -44,6 +46,26 @@ export async function generateMetadata({
   return {
     title: `${post.title} — Noki KB`,
     description: post.description,
+    openGraph: {
+      title: post.title,
+      description: post.description,
+      type: "article",
+      publishedTime: post.date + "T00:00:00Z",
+      tags: post.tags,
+      images: [
+        {
+          url: `/api/og?slug=${slug}`,
+          width: 1200,
+          height: 630,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.description,
+      images: [`/api/og?slug=${slug}`],
+    },
   };
 }
 
@@ -134,7 +156,7 @@ export default async function ArticlePage({
               options={{
                 mdxOptions: {
                   remarkPlugins: [remarkMath],
-                  rehypePlugins: [rehypeKatex as any],
+                  rehypePlugins: [rehypeKatex as any, rehypeHeadingLinks],
                 },
               }}
               components={mdxComponents}
@@ -204,6 +226,7 @@ export default async function ArticlePage({
         </div>
       </main>
       <Toc headings={headings} />
+      <KeyboardNavHint prevSlug={prev?.slug ?? null} nextSlug={next?.slug ?? null} />
     </>
   );
 }
