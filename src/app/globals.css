@@ -631,3 +631,21 @@ body {
   background: var(--color-muted);
   opacity: 0.4;
 }
+
+/* ── Heading permalink anchors ── */
+.heading-link {
+  opacity: 0;
+  margin-left: 0.4rem;
+  text-decoration: none !important;
+  transition: opacity 0.15s;
+  color: var(--color-accent);
+  font-weight: 400;
+}
+.prose h2:hover .heading-link,
+.prose h3:hover .heading-link {
+  opacity: 1;
+}
+.heading-link-icon {
+  font-size: 0.8em;
+  user-select: none;
+}

@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { searchPosts } from '@/lib/search';
 import type { PostMeta } from '@/lib/content';
-import type { SearchResult } from '@/lib/search';
 
 interface SearchModalProps {
   posts: PostMeta[];
@@ -18,7 +17,7 @@ export default function SearchModal({ posts }: SearchModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  // Memoized search results
+  // Memoized search results (metadata-only — fast, sync)
   const results = useMemo(() => searchPosts(query, posts), [query, posts]);
 
   // ── Keyboard shortcut: Cmd+K / Ctrl+K to open ──

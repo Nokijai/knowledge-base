@@ -1,4 +1,3 @@
-import Fuse from 'fuse.js';
 import type { PostMeta } from '@/lib/content';
 
 export interface SearchResult extends PostMeta {
@@ -15,6 +14,7 @@ export function searchPosts(query: string, posts: PostMeta[]): SearchResult[] {
   const trimmed = query.trim();
   if (!trimmed || posts.length === 0) return [];
 
+  const Fuse = require('fuse.js').default;
   const fuse = new Fuse(posts, {
     keys: [
       { name: 'title', weight: 2 },
@@ -30,7 +30,7 @@ export function searchPosts(query: string, posts: PostMeta[]): SearchResult[] {
 
   const raw = fuse.search(trimmed);
 
-  return raw.map(({ item, score }) => ({
+  return raw.map(({ item, score }: { item: PostMeta; score?: number }) => ({
     ...item,
     score: score !== undefined ? 1 - score : 0,
   }));

@@ -9,11 +9,14 @@ import rehypeKatex from 'rehype-katex';
 import Sidebar from '@/components/Sidebar';
 import MobileHeader from '@/components/MobileHeader';
 import CodeBlock from '@/components/article/CodeBlock';
+import Toc from '@/components/article/Toc';
 import Callout from '@/components/learn/Callout';
 import ProgressBar from '@/components/learn/ProgressBar';
 import LessonNavigation from '@/components/learn/LessonNavigation';
 import { getLesson, getTrack } from '@/lib/learn';
 import { getCategories } from '@/lib/content';
+import { extractHeadings } from '@/lib/article';
+import rehypeHeadingLinks from '@/lib/rehype-heading-links';
 
 interface Props {
   params: Promise<{ track: string; unit: string; lesson: string }>;
@@ -80,6 +83,7 @@ export default async function LessonPage({ params }: Props) {
   const lessonInUnit = unit?.lessons.findIndex((l) => l.slug === lessonSlug) ?? 0;
 
   const meta = trackMeta[trackSlug] || { icon: '○', accent: 'accent' };
+  const headings = extractHeadings(lesson.content);
 
   return (
     <>
@@ -200,7 +204,7 @@ export default async function LessonPage({ params }: Props) {
               options={{
                 mdxOptions: {
                   remarkPlugins: [remarkMath],
-                  rehypePlugins: [rehypeKatex],
+                  rehypePlugins: [rehypeKatex, rehypeHeadingLinks],
                 },
               }}
               components={mdxComponents}
@@ -215,6 +219,7 @@ export default async function LessonPage({ params }: Props) {
           />
         </div>
       </main>
+      {headings.length > 0 && <Toc headings={headings} />}
     </>
   );
 }
